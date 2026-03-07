@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# Compatibility wrapper for platforms configured with `Npm start`
+exec npm "$@"
