@@ -1,487 +1,333 @@
-const { useEffect, useMemo, useState } = React;
+const { useMemo, useState } = React;
 
-const TABS = [
+const NAV_ITEMS = [
   { id: 'overview', label: 'Executive Overview' },
   { id: 'consumer', label: 'Consumer Insights' },
   { id: 'distribution', label: 'Sales & Distribution' },
-  { id: 'retail', label: 'Retail & Rural Penetration' },
   { id: 'campaign', label: 'Campaign Performance' },
+  { id: 'retail', label: 'Retail & Rural Penetration' },
   { id: 'financial', label: 'Financial Impact' },
+  { id: 'slides', label: '4-Slide Strategy' },
   { id: 'admin', label: 'Admin Panel' },
 ];
 
-function Dashboard() {
+const kpis = {
+  totalSales: '12.8M bottles',
+  festivalGrowth: '+24%',
+  ruralPenetration: '42%',
+  activeRetailers: '3,180',
+};
+
+function App() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [region, setRegion] = useState('Chhattisgarh');
+  const [time, setTime] = useState('Festival Peak (Week 5-6)');
+  const [campaign, setCampaign] = useState('Bastar Dussehra');
   const [view, setView] = useState('employee');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const isAdminVisible = view === 'admin';
-
-  const visibleTabs = useMemo(
-    () => TABS.filter((tab) => tab.id !== 'admin' || isAdminVisible),
-    [isAdminVisible],
+  const tabs = useMemo(
+    () => NAV_ITEMS.filter((item) => item.id !== 'admin' || view === 'admin'),
+    [view],
   );
 
-  const handleTabClick = (tabId) => {
-    setActiveTab(tabId);
-    setIsMenuOpen(false);
-  };
-
-  const handleViewChange = ({ target }) => {
-    const nextView = target.value;
-    setView(nextView);
-
-    if (nextView !== 'admin' && activeTab === 'admin') {
-      setActiveTab('overview');
-    }
-  };
-
-  useEffect(() => {
-    const closeMenuOnDesktop = () => {
-      if (window.innerWidth > 960) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', closeMenuOnDesktop);
-    return () => window.removeEventListener('resize', closeMenuOnDesktop);
-  }, []);
-
   return (
-    <div className="app-shell">
-      <Sidebar
-        activeTab={activeTab}
-        tabs={visibleTabs}
-        isMenuOpen={isMenuOpen}
-        onMenuToggle={() => setIsMenuOpen((prev) => !prev)}
-        onTabClick={handleTabClick}
-      />
+    <div className="app-layout">
+      <aside className="sidebar">
+        <div className="logo-wrap">
+          <span className="dot" />
+          <div>
+            <h1>Coca-Cola GTM</h1>
+            <p>Tihar Ki Thandak Dashboard</p>
+          </div>
+        </div>
+        <nav>
+          {tabs.map((item) => (
+            <button
+              key={item.id}
+              className={activeTab === item.id ? 'active nav-btn' : 'nav-btn'}
+              onClick={() => setActiveTab(item.id)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      <main className="main-content">
-        <TopBar view={view} onViewChange={handleViewChange} />
-        <TabContent activeTab={activeTab} isAdminVisible={isAdminVisible} />
+      <main className="main">
+        <header className="topbar">
+          <div className="summary">[Logo] Campaign: {campaign} | Region: {region} | Time: {time}</div>
+          <div className="controls">
+            <label>
+              Campaign
+              <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+                <option>Bastar Dussehra</option>
+                <option>Bhoramdeo Mahotsav</option>
+                <option>Madai Festival</option>
+              </select>
+            </label>
+            <label>
+              Region
+              <select value={region} onChange={(e) => setRegion(e.target.value)}>
+                <option>Chhattisgarh</option>
+                <option>Bastar</option>
+                <option>Jagdalpur</option>
+                <option>Dantewada</option>
+              </select>
+            </label>
+            <label>
+              Time
+              <select value={time} onChange={(e) => setTime(e.target.value)}>
+                <option>Week 1-2</option>
+                <option>Week 3-4</option>
+                <option>Festival Peak (Week 5-6)</option>
+                <option>Week 7-8</option>
+                <option>Post Festival</option>
+              </select>
+            </label>
+            <label>
+              View
+              <select value={view} onChange={(e) => setView(e.target.value)}>
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <section className="content">
+          {activeTab === 'overview' && <Overview />}
+          {activeTab === 'consumer' && <Consumer />}
+          {activeTab === 'distribution' && <Distribution />}
+          {activeTab === 'campaign' && <CampaignTab />}
+          {activeTab === 'retail' && <Retail />}
+          {activeTab === 'financial' && <Financial />}
+          {activeTab === 'slides' && <Slides />}
+          {activeTab === 'admin' && view === 'admin' && <Admin />}
+        </section>
       </main>
     </div>
   );
 }
 
-function Sidebar({ activeTab, tabs, isMenuOpen, onMenuToggle, onTabClick }) {
+function KPICards() {
   return (
-    <aside className="sidebar">
-      <div className="brand-row">
-        <div className="brand-block">
-        <div className="brand-dot"></div>
-        <div>
-          <h1>Coca-Cola</h1>
-          <p>Tihar Ki Thandak</p>
-        </div>
-        </div>
-
-        <button
-          className="menu-toggle"
-          onClick={onMenuToggle}
-          type="button"
-          aria-expanded={isMenuOpen}
-          aria-label="Toggle navigation"
-        >
-          ☰
-        </button>
-      </div>
-
-      <nav className={`menu ${isMenuOpen ? 'open' : ''}`.trim()}>
-        {tabs.map(({ id, label }) => (
-          <button
-            key={id}
-            className={`menu-item ${activeTab === id ? 'active' : ''}`.trim()}
-            onClick={() => onTabClick(id)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-    </aside>
+    <div className="grid four">
+      <article className="card metric success"><h4>Total Sales Volume</h4><p>{kpis.totalSales}</p><small>Source: Distributor Sales + Retail POS</small></article>
+      <article className="card metric"><h4>Festival Sales Growth</h4><p>{kpis.festivalGrowth}</p><small>vs prior festival period</small></article>
+      <article className="card metric neutral"><h4>Rural Penetration</h4><p>{kpis.ruralPenetration}</p><small>Retail density + market reach index</small></article>
+      <article className="card metric forecast"><h4>Active Retailers</h4><p>{kpis.activeRetailers}</p><small>3,000 target achieved</small></article>
+    </div>
   );
 }
 
-function TopBar({ view, onViewChange }) {
+function Overview() {
   return (
-    <header className="top-bar">
-      <div className="filters">
-        <span>
-          Campaign: <strong>Bastar Dussehra</strong>
-        </span>
-        <span>
-          Region: <strong>Chhattisgarh</strong>
-        </span>
+    <>
+      <h2>Executive Overview</h2>
+      <p className="subtitle">Marketing Intelligence Dashboard Framework: Data Sources → Analytics Engine → Decision Dashboard → Action Layer.</p>
+      <KPICards />
+      <div className="grid three">
+        <article className="card">
+          <h3>Sales Growth Trend</h3>
+          <div className="bars">
+            <span style={{ '--h': '44%' }}>W1</span><span style={{ '--h': '58%' }}>W2</span><span style={{ '--h': '71%' }}>W3</span><span style={{ '--h': '86%' }}>W4</span><span style={{ '--h': '92%' }}>W5</span>
+          </div>
+        </article>
+        <article className="card">
+          <h3>Rural vs Urban Sales Split</h3>
+          <div className="split"><strong className="rural">Rural 68%</strong><strong className="urban">Urban 32%</strong></div>
+          <p>Drill-down available by region → district → retailer.</p>
+        </article>
+        <article className="card">
+          <h3>Beverage Category Share</h3>
+          <ul>
+            <li>Sparkling beverages: 56%</li>
+            <li>Juice-based beverages: 24%</li>
+            <li>Hydration category: 20%</li>
+          </ul>
+        </article>
       </div>
-
-      <div className="selectors">
-        <label>
-          Time
-          <select defaultValue="Week 5–6 (Peak)">
-            <option>Week 1–2</option>
-            <option>Week 3–4</option>
-            <option>Week 5–6 (Peak)</option>
-            <option>Week 7–8</option>
-          </select>
-        </label>
-
-        <label>
-          View
-          <select value={view} onChange={onViewChange}>
-            <option value="employee">Employee View</option>
-            <option value="admin">Admin View</option>
-          </select>
-        </label>
-      </div>
-    </header>
+    </>
   );
 }
 
-function TabContent({ activeTab, isAdminVisible }) {
-  const sections = {
-    overview: <Overview />,
-    consumer: <Consumer />,
-    distribution: <Distribution />,
-    retail: <Retail />,
-    campaign: <Campaign />,
-    financial: <Financial />,
-    admin: isAdminVisible ? <Admin /> : null,
-  };
-
-  return sections[activeTab] ?? <Overview />;
+function Consumer() {
+  return (
+    <>
+      <h2>Consumer Insights</h2>
+      <p className="subtitle">STP + Jobs-to-be-Done tracking for rural youth, family hosts, and festival attendees.</p>
+      <div className="grid three">
+        <article className="card">
+          <h3>Segment Mix</h3>
+          <ul>
+            <li>Rural Youth: 47%</li>
+            <li>Family Hosts: 34%</li>
+            <li>Festival Attendees: 19%</li>
+          </ul>
+        </article>
+        <article className="card">
+          <h3>Engagement Metrics</h3>
+          <ul>
+            <li>Social engagement: 9.8%</li>
+            <li>#ThandakKaTihar posts: 34,200</li>
+            <li>Influencer reach: 4.2M</li>
+          </ul>
+        </article>
+        <article className="card">
+          <h3>District Heatmap</h3>
+          <div className="heatmap">
+            <span className="hot">Bastar</span>
+            <span className="hot">Jagdalpur</span>
+            <span className="warm">Dantewada</span>
+            <span>Raipur</span>
+            <span>Bilaspur</span>
+            <span>Kanker</span>
+          </div>
+        </article>
+      </div>
+    </>
+  );
 }
 
-const Overview = () => (
-  <section className="tab active">
-    <h2>Executive Overview</h2>
-    <p className="sub">Top-level snapshot for festival-led market penetration.</p>
-
-    <div className="kpi-grid">
-      <article className="kpi success">
-        <h3>Total Sales Volume</h3>
-        <p>12.4M bottles</p>
-        <small>+22% vs baseline</small>
-      </article>
-
-      <article className="kpi neutral">
-        <h3>Festival Sales Growth</h3>
-        <p>24.1%</p>
-        <small>Target: 20–25%</small>
-      </article>
-
-      <article className="kpi positive">
-        <h3>Rural Penetration</h3>
-        <p>39%</p>
-        <small>+11 pp uplift</small>
-      </article>
-
-      <article className="kpi warning">
-        <h3>Active Retailers</h3>
-        <p>2,680</p>
-        <small>Target: 3,000</small>
-      </article>
-    </div>
-
-    <div className="panel-grid">
-      <article className="panel">
-        <h3>Sales Growth Trend</h3>
-        <div className="bars">
-          <div style={{ '--h': '38%' }}>W1</div>
-          <div style={{ '--h': '48%' }}>W2</div>
-          <div style={{ '--h': '62%' }}>W3</div>
-          <div style={{ '--h': '74%' }}>W4</div>
-          <div style={{ '--h': '83%' }}>W5</div>
-          <div style={{ '--h': '89%' }}>W6</div>
-        </div>
-      </article>
-
-      <article className="panel">
-        <h3>Rural vs Urban Split</h3>
-        <div className="split">
-          <div className="rural">Rural 68%</div>
-          <div className="urban">Urban 32%</div>
-        </div>
-        <p className="note">
-          Rural growth driven by Thandak Break Points and village retail coverage.
-        </p>
-      </article>
-
-      <article className="panel">
-        <h3>Beverage Category Share</h3>
-        <ul>
-          <li>
-            Carbonated Soft Drinks <strong>54%</strong>
-          </li>
-          <li>
-            Packaged Water <strong>18%</strong>
-          </li>
-          <li>
-            Juices <strong>16%</strong>
-          </li>
-          <li>
-            Energy Drinks <strong>12%</strong>
-          </li>
-        </ul>
-      </article>
-    </div>
-  </section>
-);
-
-const Consumer = () => (
-  <section className="tab active">
-    <h2>Consumer Insights</h2>
-
-    <div className="panel-grid two">
-      <article className="panel">
-        <h3>Segment Mix</h3>
-        <ul>
-          <li>
-            Rural Youth: <strong>46%</strong>
-          </li>
-          <li>
-            Festival Hosts: <strong>34%</strong>
-          </li>
-          <li>
-            Festival Attendees: <strong>20%</strong>
-          </li>
-        </ul>
-        <p className="note">
-          Jobs-to-be-done: refresh energy, serve guests quickly, amplify social bonding.
-        </p>
-      </article>
-
-      <article className="panel">
-        <h3>Digital Engagement</h3>
-        <ul>
-          <li>
-            #ThandakKaTihar posts: <strong>18.6K</strong>
-          </li>
-          <li>
-            Influencer reach: <strong>2.3M</strong>
-          </li>
-          <li>
-            Engagement rate: <strong>7.8%</strong>
-          </li>
-        </ul>
-      </article>
-    </div>
-
-    <article className="panel full">
-      <h3>District Heatmap (Engagement Index)</h3>
-      <div className="heatmap">
-        <span className="hot">Bastar</span>
-        <span className="warm">Jagdalpur</span>
-        <span className="warm">Dantewada</span>
-        <span>Raipur</span>
-        <span>Bilaspur</span>
-        <span>Kanker</span>
+function Distribution() {
+  return (
+    <>
+      <h2>Sales & Distribution</h2>
+      <p className="subtitle">GTM Funnel: Distributor → Sub-distributor → Retailer → Consumer.</p>
+      <div className="grid three">
+        <article className="card">
+          <h3>District Sales Leaderboard</h3>
+          <ol><li>Bastar - 2.2M crates</li><li>Raipur - 1.9M crates</li><li>Jagdalpur - 1.6M crates</li></ol>
+        </article>
+        <article className="card">
+          <h3>SKU Performance</h3>
+          <ul><li>200ml RGB: 39%</li><li>600ml PET: 28%</li><li>1.25L + 2L Packs: 33%</li></ul>
+        </article>
+        <article className="card">
+          <h3>Out-of-Stock Alerts</h3>
+          <p><strong>5.6%</strong> OOS (target {'<'} 4%).</p>
+          <p>Auto-alert active for Bastar and Dantewada distributors.</p>
+        </article>
       </div>
-    </article>
-  </section>
-);
+    </>
+  );
+}
 
-const Distribution = () => (
-  <section className="tab active">
-    <h2>Sales &amp; Distribution</h2>
+function CampaignTab() {
+  return (
+    <>
+      <h2>Campaign Performance</h2>
+      <p className="subtitle">AIDA Funnel + Event Conversion Performance.</p>
+      <div className="grid three">
+        <article className="card">
+          <h3>AIDA Funnel</h3>
+          <ul><li>Awareness: 7.4M impressions</li><li>Interest: 1.9M engagements</li><li>Desire: 412K coupon intents</li><li>Action: 168K redemptions</li></ul>
+        </article>
+        <article className="card">
+          <h3>Event Metrics</h3>
+          <ul><li>Thandak zone footfall: 210K</li><li>Sampling conversion: 38%</li><li>Coke Folk Night attendance: 42K</li></ul>
+        </article>
+        <article className="card">
+          <h3>Channel Analytics</h3>
+          <ul><li>Instagram: 4.8M reach</li><li>YouTube Shorts: 2.1M views</li><li>WhatsApp referrals: 320K clicks</li></ul>
+        </article>
+      </div>
+    </>
+  );
+}
 
-    <article className="panel full">
-      <h3>Distribution Funnel</h3>
-      <p className="funnel">
-        Distributor <span>→</span> Sub-distributor <span>→</span> Village Retailers <span>→</span>{' '}
-        Festival Stalls <span>→</span> Consumers
-      </p>
-    </article>
+function Retail() {
+  return (
+    <>
+      <h2>Retail & Rural Penetration</h2>
+      <p className="subtitle">Rural Penetration Index = Retail Density + Sales Growth + Cold Storage Availability.</p>
+      <div className="grid three">
+        <article className="card">
+          <h3>Retailer Coverage Map (GIS)</h3>
+          <ul><li>Kirana stores: 2,250</li><li>Haat market points: 570</li><li>Festival stalls: 360</li></ul>
+        </article>
+        <article className="card">
+          <h3>Rural KPI Tracker</h3>
+          <ul><li>New retailers added: 3,180</li><li>Rural penetration uplift: +14 pts</li><li>Cold storage available: 72%</li></ul>
+        </article>
+        <article className="card">
+          <h3>Top Outlet Ranking</h3>
+          <ol><li>Jagdalpur Chowk Kirana</li><li>Bastar Haat Express</li><li>Dantewada Festival Stall #4</li></ol>
+        </article>
+      </div>
+    </>
+  );
+}
 
-    <div className="panel-grid two">
-      <article className="panel">
-        <h3>District Sales Leaderboard (Crates)</h3>
-        <ol>
-          <li>Bastar — 145K</li>
-          <li>Raipur — 118K</li>
-          <li>Jagdalpur — 109K</li>
-          <li>Durg — 91K</li>
-        </ol>
-      </article>
+function Financial() {
+  return (
+    <>
+      <h2>Financial Impact</h2>
+      <p className="subtitle">State activation budget ₹4 Cr with forecasted post-festival sales lift.</p>
+      <div className="grid three">
+        <article className="card">
+          <h3>Financial Metrics</h3>
+          <ul><li>Campaign cost: ₹4.0 Cr</li><li>Revenue generated: ₹11.4 Cr</li><li>Profit margin: 23%</li><li>ROI: 2.85x</li></ul>
+        </article>
+        <article className="card">
+          <h3>Budget Split</h3>
+          <ul><li>On-ground activation: ₹1.5 Cr</li><li>Distribution expansion: ₹1.0 Cr</li><li>Retail visibility: ₹0.8 Cr</li><li>Digital + influencer: ₹0.7 Cr</li></ul>
+        </article>
+        <article className="card">
+          <h3>Forecast</h3>
+          <p>AI demand model predicts additional <strong>+12%</strong> sales in 30 days post-festival.</p>
+          <p>Real-time risk alerts enabled for low inventory and declining district velocity.</p>
+        </article>
+      </div>
+    </>
+  );
+}
 
-      <article className="panel">
-        <h3>SKU Performance</h3>
-        <ul>
-          <li>
-            200ml RGB: <strong>41%</strong>
-          </li>
-          <li>
-            600ml PET: <strong>26%</strong>
-          </li>
-          <li>
-            1.25L: <strong>19%</strong>
-          </li>
-          <li>
-            2L: <strong>14%</strong>
-          </li>
-        </ul>
-      </article>
-    </div>
-  </section>
-);
+function Slides() {
+  return (
+    <>
+      <h2>Case Competition 4-Slide Structure</h2>
+      <p className="subtitle">Consulting-style structure using STP, JTBD, 4Ps, AIDA, GTM funnel, and KPI framework.</p>
+      <div className="grid two">
+        <article className="card">
+          <h3>Slide 1: Problem + Insight + Festival</h3>
+          <p><strong>Frameworks:</strong> Market Gap + STP + Jobs-to-be-Done.</p>
+          <ul><li>Underpenetrated rural packaged beverage market</li><li>Targets: rural youth (primary), family hosts (secondary)</li><li>Core insight: “refreshment enables celebrations to continue”</li><li>Festival anchor: Bastar Dussehra (75 days, 1M+ attendees)</li></ul>
+        </article>
+        <article className="card">
+          <h3>Slide 2: Big Idea + Occasion Creation</h3>
+          <p><strong>Campaign:</strong> Tihar ki Thandak | Tagline: Jashn Bada, Thandak Zaroori.</p>
+          <ul><li>Procession break points</li><li>Festival welcome drink ritual</li><li>Community sharing bottles (1.25L/2L)</li><li>AIDA funnel-led communication</li></ul>
+        </article>
+        <article className="card">
+          <h3>Slide 3: Portfolio + GTM + Activation</h3>
+          <p><strong>Frameworks:</strong> 4Ps + Rural distribution funnel.</p>
+          <ul><li>Product portfolio by segment (200ml, 600ml, 1.25L+)</li><li>Price entry at ₹10–₹15</li><li>3,000 outlet expansion via haats + stalls</li><li>Thandak zones and tribal cultural activations</li></ul>
+        </article>
+        <article className="card">
+          <h3>Slide 4: Digital + Financials + Risks</h3>
+          <p><strong>Frameworks:</strong> 360° marketing + KPI + risk matrix.</p>
+          <ul><li>#ThandakKaTihar UGC and creator strategy</li><li>KPI goals: sales + distribution + brand recall</li><li>Budget: ₹4 Cr, ROI tracking</li><li>Scalability model: Festival → Ritual → Beverage Occasion</li></ul>
+        </article>
+      </div>
+    </>
+  );
+}
 
-const Retail = () => (
-  <section className="tab active">
-    <h2>Retail &amp; Rural Penetration</h2>
+function Admin() {
+  return (
+    <>
+      <h2>Admin Panel</h2>
+      <p className="subtitle">Strategic controls for user access, KPI customization, data integration, and alerts.</p>
+      <div className="grid two">
+        <article className="card"><h3>User Access Management</h3><p>Assign roles: Regional manager, Sales manager, Distributor.</p></article>
+        <article className="card"><h3>Data Upload & Integration</h3><p>Upload distributor sales, retail reports, social and campaign metrics.</p></article>
+        <article className="card"><h3>Campaign Configuration</h3><p>Adjust campaign timeline, budget allocation, and promotion rules.</p></article>
+        <article className="card"><h3>Alert Management & KPI Controls</h3><p>Define thresholds for stock-outs, declining sales, and distribution gaps.</p></article>
+      </div>
+    </>
+  );
+}
 
-    <div className="kpi-grid mini">
-      <article className="kpi positive">
-        <h3>New Retailers Added</h3>
-        <p>2,680</p>
-      </article>
-
-      <article className="kpi neutral">
-        <h3>Rural Outlet Penetration</h3>
-        <p>44%</p>
-      </article>
-
-      <article className="kpi warning">
-        <h3>Cold Storage Coverage</h3>
-        <p>61%</p>
-      </article>
-    </div>
-
-    <div className="panel-grid two">
-      <article className="panel">
-        <h3>Retailer Ranking</h3>
-        <ol>
-          <li>Kirana Point, Bastar — 98 score</li>
-          <li>Jagdalpur Bazaar Hub — 95 score</li>
-          <li>Dantewada Haat Stall — 92 score</li>
-        </ol>
-      </article>
-
-      <article className="panel">
-        <h3>Geo-Spatial Signals</h3>
-        <p>
-          Demand clusters identified in Bastar belt with low-cold-chain pockets in South
-          Dantewada. Auto-alerts trigger on stock-out probability above 70%.
-        </p>
-      </article>
-    </div>
-  </section>
-);
-
-const Campaign = () => (
-  <section className="tab active">
-    <h2>Campaign Performance (AIDA)</h2>
-
-    <div className="panel-grid two">
-      <article className="panel">
-        <h3>Funnel Metrics</h3>
-        <ul>
-          <li>
-            Awareness (Impressions): <strong>8.1M</strong>
-          </li>
-          <li>
-            Interest (Engaged users): <strong>1.9M</strong>
-          </li>
-          <li>
-            Desire (Coupon opens): <strong>430K</strong>
-          </li>
-          <li>
-            Action (Redemptions): <strong>165K</strong>
-          </li>
-        </ul>
-      </article>
-
-      <article className="panel">
-        <h3>Event Activation Performance</h3>
-        <ul>
-          <li>
-            Thandak Zone footfall: <strong>312K</strong>
-          </li>
-          <li>
-            Sampling conversions: <strong>38%</strong>
-          </li>
-          <li>
-            Influencer content completion: <strong>96%</strong>
-          </li>
-        </ul>
-      </article>
-    </div>
-  </section>
-);
-
-const Financial = () => (
-  <section className="tab active">
-    <h2>Financial Impact</h2>
-
-    <div className="kpi-grid">
-      <article className="kpi neutral">
-        <h3>Campaign Cost</h3>
-        <p>₹4.0 Cr</p>
-      </article>
-
-      <article className="kpi success">
-        <h3>Revenue Generated</h3>
-        <p>₹6.6 Cr</p>
-      </article>
-
-      <article className="kpi positive">
-        <h3>Profit Margin</h3>
-        <p>18.7%</p>
-      </article>
-
-      <article className="kpi success">
-        <h3>ROI</h3>
-        <p>1.65x</p>
-      </article>
-    </div>
-
-    <article className="panel full">
-      <h3>Revenue vs Marketing Spend Forecast</h3>
-      <p>
-        AI-assisted model predicts sustained post-festival uplift of 12% with optimized retailer
-        replenishment and continued WhatsApp coupon cycles.
-      </p>
-    </article>
-  </section>
-);
-
-const Admin = () => (
-  <section className="tab active">
-    <h2>Admin Control Center</h2>
-
-    <div className="panel-grid two">
-      <article className="panel">
-        <h3>Admin Features</h3>
-        <ul>
-          <li>User access management (Regional Manager / Sales Manager / Distributor)</li>
-          <li>Data upload: POS, distributor sales, campaign files</li>
-          <li>KPI target customization and widget configuration</li>
-          <li>Alert management for low stock, declining sales, and distribution gaps</li>
-        </ul>
-      </article>
-
-      <article className="panel">
-        <h3>Execution Timeline</h3>
-        <ul>
-          <li>Week 1–2: Distribution expansion &amp; warehouse pre-stock</li>
-          <li>Week 3–4: Pre-festival media burst &amp; retailer visibility</li>
-          <li>Week 5–6: Peak activation &amp; live monitoring</li>
-          <li>Week 7–8: Post-event engagement &amp; performance review</li>
-        </ul>
-      </article>
-    </div>
-
-    <article className="panel full">
-      <h3>Risk Matrix</h3>
-      <ul>
-        <li>Traditional drink preference → Mitigation: ₹10 entry packs + welcome ritual messaging</li>
-        <li>Cold-chain gaps → Mitigation: solar coolers + route optimization</li>
-        <li>
-          Supply chain disruption → Mitigation: district-level buffer stock and auto-alerts
-        </li>
-      </ul>
-    </article>
-  </section>
-);
-
-ReactDOM.createRoot(document.getElementById('root')).render(<Dashboard />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
