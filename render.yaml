@@ -3,5 +3,5 @@ services:
     name: coco-cola-dashboard
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: yarn install; yarn build
     startCommand: npm start
