@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node start.js",
-    "dev": "node start.js"
+    "dev": "node start.js",
+    "build": "echo 'Build completed'"
   }
 }
