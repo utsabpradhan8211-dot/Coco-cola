@@ -34,7 +34,25 @@ body {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1.3rem;
+}
+
+.brand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.menu-toggle {
+  display: none;
+  border: 1px solid #3b3b3b;
+  background: #232323;
+  color: #fff;
+  border-radius: 8px;
+  width: 40px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 1.1rem;
 }
 .brand-dot {
   width: 14px;
@@ -203,11 +221,36 @@ h2 { margin: 0.4rem 0 0.2rem; }
 
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; }
-  .sidebar { position: sticky; top: 0; z-index: 5; }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.8rem;
+  }
+  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .menu {
+    display: none;
+    margin-top: 0.8rem;
+  }
+  .menu.open {
+    display: flex;
+  }
   .kpi-grid,
   .kpi-grid.mini,
   .panel-grid,
   .panel-grid.two,
   .heatmap { grid-template-columns: 1fr; }
   .top-bar { flex-direction: column; align-items: flex-start; }
+  .selectors {
+    width: 100%;
+    flex-direction: column;
+  }
+  .selectors label {
+    width: 100%;
+    display: grid;
+    gap: 0.25rem;
+  }
+  .selectors select {
+    width: 100%;
+  }
 }

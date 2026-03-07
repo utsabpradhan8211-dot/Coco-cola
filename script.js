@@ -1,4 +1,4 @@
-const { useMemo, useState } = React;
+const { useEffect, useMemo, useState } = React;
 
 const TABS = [
   { id: 'overview', label: 'Executive Overview' },
@@ -13,6 +13,7 @@ const TABS = [
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [view, setView] = useState('employee');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isAdminVisible = view === 'admin';
 
@@ -21,7 +22,10 @@ function Dashboard() {
     [isAdminVisible],
   );
 
-  const handleTabClick = (tabId) => setActiveTab(tabId);
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    setIsMenuOpen(false);
+  };
 
   const handleViewChange = ({ target }) => {
     const nextView = target.value;
@@ -32,11 +36,24 @@ function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    const closeMenuOnDesktop = () => {
+      if (window.innerWidth > 960) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', closeMenuOnDesktop);
+    return () => window.removeEventListener('resize', closeMenuOnDesktop);
+  }, []);
+
   return (
     <div className="app-shell">
       <Sidebar
         activeTab={activeTab}
         tabs={visibleTabs}
+        isMenuOpen={isMenuOpen}
+        onMenuToggle={() => setIsMenuOpen((prev) => !prev)}
         onTabClick={handleTabClick}
       />
 
@@ -48,18 +65,30 @@ function Dashboard() {
   );
 }
 
-function Sidebar({ activeTab, tabs, onTabClick }) {
+function Sidebar({ activeTab, tabs, isMenuOpen, onMenuToggle, onTabClick }) {
   return (
     <aside className="sidebar">
-      <div className="brand-block">
+      <div className="brand-row">
+        <div className="brand-block">
         <div className="brand-dot"></div>
         <div>
           <h1>Coca-Cola</h1>
           <p>Tihar Ki Thandak</p>
         </div>
+        </div>
+
+        <button
+          className="menu-toggle"
+          onClick={onMenuToggle}
+          type="button"
+          aria-expanded={isMenuOpen}
+          aria-label="Toggle navigation"
+        >
+          ☰
+        </button>
       </div>
 
-      <nav className="menu">
+      <nav className={`menu ${isMenuOpen ? 'open' : ''}`.trim()}>
         {tabs.map(({ id, label }) => (
           <button
             key={id}

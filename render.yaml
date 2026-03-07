@@ -4,4 +4,4 @@ services:
     env: node
     plan: free
     buildCommand: yarn install; yarn build
-    startCommand: npm start
+    startCommand: ./Npm start
