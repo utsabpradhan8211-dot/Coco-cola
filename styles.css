@@ -117,6 +117,10 @@ h2 { margin: .2rem 0; }
 .grid.three { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
 .grid.two { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
 
+.grid.auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
 .card {
   background: var(--panel);
   border: 1px solid #e8eaed;
@@ -149,6 +153,135 @@ h2 { margin: .2rem 0; }
   justify-content: center;
   font-size: .72rem;
   padding-bottom: .25rem;
+}
+
+.chart-caption {
+  margin-top: .6rem;
+  color: #66717e;
+  font-size: .8rem;
+}
+
+.line-chart {
+  height: 140px;
+  width: 100%;
+}
+
+.line-fill {
+  fill: rgba(228, 30, 38, 0.12);
+}
+
+.line-path {
+  fill: none;
+  stroke: var(--brand-red);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.point {
+  fill: #fff;
+  stroke: var(--brand-red);
+  stroke-width: 3;
+}
+
+.pie-wrap {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: .8rem;
+}
+
+.donut {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(var(--segments));
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.donut::after {
+  content: attr(data-label);
+  width: 68px;
+  height: 68px;
+  background: #fff;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #29303a;
+  font-size: .78rem;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: .35rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  color: #4f5b69;
+  font-size: .86rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 99px;
+}
+
+.progress-list {
+  display: grid;
+  gap: .6rem;
+}
+
+.progress-item {
+  display: grid;
+  gap: .22rem;
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: .82rem;
+  color: #616d7a;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: #edf1f5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff8b92 0%, var(--brand-red) 100%);
+}
+
+.kpi-banner {
+  margin-top: .8rem;
+  background: linear-gradient(120deg, #e41e26 0%, #a10f15 55%, #44070a 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: .85rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.kpi-banner strong {
+  font-size: 1.2rem;
 }
 
 .split {
