@@ -18,6 +18,9 @@ const kpis = {
   activeRetailers: '3,180',
 };
 
+const monthlySales = [4.1, 4.8, 5.3, 6.2, 7.1, 7.8];
+const weeklyDemand = [44, 58, 71, 86, 92];
+
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [region, setRegion] = useState('Chhattisgarh');
@@ -110,6 +113,52 @@ function App() {
   );
 }
 
+function LineChart({ values }) {
+  const points = values
+    .map((value, index) => `${index * (100 / (values.length - 1))},${100 - value}`)
+    .join(' ');
+  const areaPoints = `0,100 ${points} 100,100`;
+
+  return (
+    <svg className="line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Monthly sales trend line chart">
+      <polygon className="line-fill" points={areaPoints} />
+      <polyline className="line-path" points={points} />
+      {values.map((value, index) => (
+        <circle key={index} className="point" cx={index * (100 / (values.length - 1))} cy={100 - value} r="2.8" />
+      ))}
+    </svg>
+  );
+}
+
+function DonutChart({ label, segments }) {
+  const gradient = segments
+    .map((segment, index) => {
+      const start = segments.slice(0, index).reduce((sum, item) => sum + item.value, 0);
+      return `${segment.color} ${start}% ${start + segment.value}%`;
+    })
+    .join(', ');
+
+  return <div className="donut" style={{ '--segments': gradient }} data-label={label} />;
+}
+
+function ProgressBars({ items }) {
+  return (
+    <div className="progress-list">
+      {items.map((item) => (
+        <div className="progress-item" key={item.label}>
+          <div className="progress-meta">
+            <span>{item.label}</span>
+            <strong>{item.value}%</strong>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${item.value}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function KPICards() {
   return (
     <div className="grid four">
@@ -127,25 +176,43 @@ function Overview() {
       <h2>Executive Overview</h2>
       <p className="subtitle">Marketing Intelligence Dashboard Framework: Data Sources → Analytics Engine → Decision Dashboard → Action Layer.</p>
       <KPICards />
-      <div className="grid three">
+      <div className="kpi-banner">
+        <span>Live uplift in festival districts</span>
+        <strong>+31% Beverage Velocity</strong>
+        <span>Updated 12 mins ago</span>
+      </div>
+      <div className="grid auto-fit">
         <article className="card">
-          <h3>Sales Growth Trend</h3>
+          <h3>Weekly Demand Infographic</h3>
           <div className="bars">
-            <span style={{ '--h': '44%' }}>W1</span><span style={{ '--h': '58%' }}>W2</span><span style={{ '--h': '71%' }}>W3</span><span style={{ '--h': '86%' }}>W4</span><span style={{ '--h': '92%' }}>W5</span>
+            {weeklyDemand.map((value, index) => (
+              <span key={index} style={{ '--h': `${value}%` }}>W{index + 1}</span>
+            ))}
           </div>
+          <p className="chart-caption">Demand accelerates near procession weekends and evening haat traffic peaks.</p>
         </article>
         <article className="card">
-          <h3>Rural vs Urban Sales Split</h3>
-          <div className="split"><strong className="rural">Rural 68%</strong><strong className="urban">Urban 32%</strong></div>
-          <p>Drill-down available by region → district → retailer.</p>
+          <h3>Month-on-Month Sales Trend</h3>
+          <LineChart values={monthlySales.map((item) => item * 10)} />
+          <p className="chart-caption">Sales rose from 4.1M to 7.8M units in six months, driven by rural route expansion.</p>
         </article>
         <article className="card">
-          <h3>Beverage Category Share</h3>
-          <ul>
-            <li>Sparkling beverages: 56%</li>
-            <li>Juice-based beverages: 24%</li>
-            <li>Hydration category: 20%</li>
-          </ul>
+          <h3>Beverage Category Mix</h3>
+          <div className="pie-wrap">
+            <DonutChart
+              label="Mix"
+              segments={[
+                { color: '#e41e26', value: 56 },
+                { color: '#ff7a00', value: 24 },
+                { color: '#2f7ed8', value: 20 },
+              ]}
+            />
+            <ul className="legend">
+              <li><span className="legend-dot" style={{ background: '#e41e26' }} /> Sparkling beverages — 56%</li>
+              <li><span className="legend-dot" style={{ background: '#ff7a00' }} /> Juice-based beverages — 24%</li>
+              <li><span className="legend-dot" style={{ background: '#2f7ed8' }} /> Hydration category — 20%</li>
+            </ul>
+          </div>
         </article>
       </div>
     </>
@@ -219,18 +286,25 @@ function CampaignTab() {
     <>
       <h2>Campaign Performance</h2>
       <p className="subtitle">AIDA Funnel + Event Conversion Performance.</p>
-      <div className="grid three">
+      <div className="grid auto-fit">
         <article className="card">
           <h3>AIDA Funnel</h3>
           <ul><li>Awareness: 7.4M impressions</li><li>Interest: 1.9M engagements</li><li>Desire: 412K coupon intents</li><li>Action: 168K redemptions</li></ul>
         </article>
         <article className="card">
-          <h3>Event Metrics</h3>
-          <ul><li>Thandak zone footfall: 210K</li><li>Sampling conversion: 38%</li><li>Coke Folk Night attendance: 42K</li></ul>
+          <h3>Channel Conversion Rate</h3>
+          <ProgressBars
+            items={[
+              { label: 'Instagram Reels', value: 78 },
+              { label: 'YouTube Shorts', value: 63 },
+              { label: 'WhatsApp Referrals', value: 49 },
+            ]}
+          />
+          <p className="chart-caption">Reels deliver the strongest conversion and should lead creative investments.</p>
         </article>
         <article className="card">
-          <h3>Channel Analytics</h3>
-          <ul><li>Instagram: 4.8M reach</li><li>YouTube Shorts: 2.1M views</li><li>WhatsApp referrals: 320K clicks</li></ul>
+          <h3>Event Metrics</h3>
+          <ul><li>Thandak zone footfall: 210K</li><li>Sampling conversion: 38%</li><li>Coke Folk Night attendance: 42K</li></ul>
         </article>
       </div>
     </>
