@@ -1,37 +1,161 @@
-const { useMemo, useState } = React;
+const { useEffect, useMemo, useState } = React;
 
-const NAV_ITEMS = [
-  { id: 'overview', label: 'Executive Overview' },
-  { id: 'consumer', label: 'Consumer Insights' },
-  { id: 'distribution', label: 'Sales & Distribution' },
-  { id: 'campaign', label: 'Campaign Performance' },
-  { id: 'retail', label: 'Retail & Rural Penetration' },
-  { id: 'financial', label: 'Financial Impact' },
-  { id: 'slides', label: 'Strategy War Room' },
-  { id: 'admin', label: 'Admin Panel' },
-];
-
-const kpis = {
-  totalSales: '12.8M bottles',
-  festivalGrowth: '+24%',
-  ruralPenetration: '42%',
-  activeRetailers: '3,180',
+const LOGIN_USERS = {
+  admin: { password: 'admin', role: 'admin', name: 'Admin User' },
+  employee: { password: 'employee', role: 'employee', name: 'Employee User' },
 };
 
-const monthlySales = [4.1, 4.8, 5.3, 6.2, 7.1, 7.8];
-const weeklyDemand = [44, 58, 71, 86, 92];
+const SIDEBAR_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'consumer', label: 'Consumer Insights' },
+  { id: 'sales', label: 'Sales & Distribution' },
+  { id: 'retail', label: 'Retail Universe' },
+  { id: 'campaign', label: 'Campaign Analytics' },
+  { id: 'financial', label: 'Financial Impact' },
+  { id: 'forecast', label: 'Forecasting' },
+  { id: 'field', label: 'Field Sales Performance' },
+  { id: 'admin', label: 'Admin Panel', adminOnly: true },
+];
+
+const SALES_DATA = [
+  { state: 'Chhattisgarh', district: 'Bastar', retailer: 'Bastar Mart', sku: '200ml RGB', campaign: 'Bastar Dussehra', date: '2026-10-01', sales: 72000, inventory: 4300, active: true, events: 7, footfall: 12000, influencer: 42000, coupons: 1800, orders: 34, promo: 78, deliveries: 93, coverage: 84, cost: 47000, competitor: { coke: 54, pepsi: 31, local: 15 } },
+  { state: 'Chhattisgarh', district: 'Jagdalpur', retailer: 'Jagdalpur Outlet', sku: '600ml PET', campaign: 'Bastar Dussehra', date: '2026-10-03', sales: 56000, inventory: 3200, active: true, events: 5, footfall: 9200, influencer: 35000, coupons: 1200, orders: 27, promo: 63, deliveries: 85, coverage: 78, cost: 39000, competitor: { coke: 49, pepsi: 35, local: 16 } },
+  { state: 'Chhattisgarh', district: 'Dantewada', retailer: 'Dantewada Kiosk', sku: '1.25L Pack', campaign: 'Madai Festival', date: '2026-10-05', sales: 39000, inventory: 1100, active: false, events: 2, footfall: 4500, influencer: 17000, coupons: 480, orders: 12, promo: 44, deliveries: 71, coverage: 52, cost: 31000, competitor: { coke: 41, pepsi: 37, local: 22 } },
+  { state: 'Chhattisgarh', district: 'Raipur', retailer: 'Raipur Superstore', sku: '2L Family Pack', campaign: 'Bhoramdeo Mahotsav', date: '2026-10-08', sales: 64000, inventory: 5200, active: true, events: 4, footfall: 6300, influencer: 28000, coupons: 980, orders: 21, promo: 59, deliveries: 89, coverage: 81, cost: 41000, competitor: { coke: 52, pepsi: 34, local: 14 } },
+  { state: 'Chhattisgarh', district: 'Kanker', retailer: 'Kanker General', sku: '200ml RGB', campaign: 'Madai Festival', date: '2026-10-11', sales: 28000, inventory: 900, active: false, events: 3, footfall: 3900, influencer: 14000, coupons: 360, orders: 10, promo: 35, deliveries: 68, coverage: 49, cost: 23000, competitor: { coke: 38, pepsi: 33, local: 29 } },
+];
+
+const DATE_RANGES = [
+  { id: 'all', label: 'All Time' },
+  { id: 'last7', label: 'Last 7 days' },
+  { id: 'last30', label: 'Last 30 days' },
+];
+
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState('employee');
+  const [password, setPassword] = useState('employee');
+  const [remember, setRemember] = useState(true);
+  const [error, setError] = useState('');
+
+  const submit = (e) => {
+    e.preventDefault();
+    const account = LOGIN_USERS[username];
+    if (!account || account.password !== password) {
+      setError('Invalid credentials. Use admin/admin or employee/employee.');
+      return;
+    }
+    onLogin({ username, role: account.role, name: account.name, remember });
+  };
+
+  return (
+    <div className="login-shell">
+      <form className="login-card" onSubmit={submit}>
+        <h1>Coca-Cola FMCG Dashboard</h1>
+        <p>Login with role-based access control.</p>
+        <label>Username
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin or employee" />
+        </label>
+        <label>Password
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember session
+        </label>
+        {error && <p className="error">{error}</p>}
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  );
+}
 
 function App() {
+  const [session, setSession] = useState(() => {
+    const saved = localStorage.getItem('coke-session');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [activeTab, setActiveTab] = useState('overview');
-  const [region, setRegion] = useState('Chhattisgarh');
-  const [time, setTime] = useState('Festival Peak (Week 5-6)');
-  const [campaign, setCampaign] = useState('Bastar Dussehra');
-  const [view, setView] = useState('employee');
+  const [drillLevel, setDrillLevel] = useState('state');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [filters, setFilters] = useState({ region: 'All', district: 'All', sku: 'All', campaign: 'All', dateRange: 'all' });
+  const [users, setUsers] = useState([
+    { username: 'admin', role: 'admin' },
+    { username: 'employee', role: 'employee' },
+  ]);
 
-  const tabs = useMemo(
-    () => NAV_ITEMS.filter((item) => item.id !== 'admin' || view === 'admin'),
-    [view],
-  );
+  useEffect(() => {
+    const timer = setInterval(() => setLastRefresh(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const onLogin = ({ remember, ...rest }) => {
+    setSession(rest);
+    if (remember) {
+      localStorage.setItem('coke-session', JSON.stringify(rest));
+    } else {
+      localStorage.removeItem('coke-session');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('coke-session');
+    setSession(null);
+  };
+
+  const filteredData = useMemo(() => {
+    const now = new Date('2026-10-12');
+    return SALES_DATA.filter((row) => {
+      const matchesRegion = filters.region === 'All' || row.state === filters.region;
+      const matchesDistrict = filters.district === 'All' || row.district === filters.district;
+      const matchesSku = filters.sku === 'All' || row.sku === filters.sku;
+      const matchesCampaign = filters.campaign === 'All' || row.campaign === filters.campaign;
+      const diffDays = (now - new Date(row.date)) / (1000 * 60 * 60 * 24);
+      const matchesDate =
+        filters.dateRange === 'all' ||
+        (filters.dateRange === 'last7' && diffDays <= 7) ||
+        (filters.dateRange === 'last30' && diffDays <= 30);
+      return matchesRegion && matchesDistrict && matchesSku && matchesCampaign && matchesDate;
+    });
+  }, [filters]);
+
+  const options = useMemo(() => ({
+    regions: ['All', ...new Set(SALES_DATA.map((d) => d.state))],
+    districts: ['All', ...new Set(SALES_DATA.map((d) => d.district))],
+    skus: ['All', ...new Set(SALES_DATA.map((d) => d.sku))],
+    campaigns: ['All', ...new Set(SALES_DATA.map((d) => d.campaign))],
+  }), []);
+
+  const metrics = useMemo(() => {
+    const totalSales = filteredData.reduce((sum, row) => sum + row.sales, 0);
+    const totalCost = filteredData.reduce((sum, row) => sum + row.cost, 0);
+    const activeRetailers = filteredData.filter((row) => row.active).length;
+    const coverage = filteredData.length ? Math.round(filteredData.reduce((sum, row) => sum + row.coverage, 0) / filteredData.length) : 0;
+    const roi = totalCost ? ((totalSales - totalCost) / totalCost) * 100 : 0;
+    const growth = filteredData.length ? ((filteredData[filteredData.length - 1]?.sales || 0) - filteredData[0].sales) / filteredData[0].sales * 100 : 0;
+    return { totalSales, totalCost, activeRetailers, coverage, roi, growth };
+  }, [filteredData]);
+
+  const alerts = useMemo(() => {
+    const flags = [];
+    if (filteredData.some((r) => r.inventory < 1200)) flags.push('Low inventory risk detected.');
+    if (metrics.growth < 0) flags.push('Sales are declining across selected slice.');
+    if (filteredData.some((r) => !r.active)) flags.push('Inactive retailers require field intervention.');
+    if (filteredData.some((r) => r.inventory < 1000)) flags.push('Stockout risk: distributor may run out in 3 days.');
+    return flags;
+  }, [filteredData, metrics.growth]);
+
+  if (!session) return <LoginScreen onLogin={onLogin} />;
+
+  const allowedTabs = SIDEBAR_TABS.filter((tab) => !tab.adminOnly || session.role === 'admin');
+
+  const exportCsv = () => {
+    const rows = ['state,district,retailer,sku,campaign,date,sales'];
+    filteredData.forEach((r) => rows.push(`${r.state},${r.district},${r.retailer},${r.sku},${r.campaign},${r.date},${r.sales}`));
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fmcg-report.csv';
+    a.click();
+  };
 
   return (
     <div className="app-layout">
@@ -39,369 +163,161 @@ function App() {
         <div className="logo-wrap">
           <span className="dot" />
           <div>
-            <h1>Coca-Cola GTM</h1>
-            <p>Tihar Ki Thandak Dashboard</p>
+            <h1>Coca-Cola Analytics</h1>
+            <p>Decision Intelligence Suite</p>
           </div>
         </div>
         <nav>
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              className={activeTab === item.id ? 'active nav-btn' : 'nav-btn'}
-              onClick={() => setActiveTab(item.id)}
-              type="button"
-            >
-              {item.label}
-            </button>
+          {allowedTabs.map((item) => (
+            <button key={item.id} className={activeTab === item.id ? 'active nav-btn' : 'nav-btn'} onClick={() => setActiveTab(item.id)}>{item.label}</button>
           ))}
         </nav>
       </aside>
-
       <main className="main">
         <header className="topbar">
-          <div className="summary">[Logo] Campaign: {campaign} | Region: {region} | Time: {time}</div>
+          <div className="summary">Real-time FMCG Dashboard • Auto-refresh every 60s • Last refresh: {lastRefresh.toLocaleTimeString()}</div>
           <div className="controls">
-            <label>
-              Campaign
-              <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-                <option>Bastar Dussehra</option>
-                <option>Bhoramdeo Mahotsav</option>
-                <option>Madai Festival</option>
+            <label>Region
+              <select value={filters.region} onChange={(e) => setFilters((f) => ({ ...f, region: e.target.value }))}>{options.regions.map((o) => <option key={o}>{o}</option>)}</select>
+            </label>
+            <label>District
+              <select value={filters.district} onChange={(e) => setFilters((f) => ({ ...f, district: e.target.value }))}>{options.districts.map((o) => <option key={o}>{o}</option>)}</select>
+            </label>
+            <label>Campaign
+              <select value={filters.campaign} onChange={(e) => setFilters((f) => ({ ...f, campaign: e.target.value }))}>{options.campaigns.map((o) => <option key={o}>{o}</option>)}</select>
+            </label>
+            <label>User
+              <select value={session.role} disabled>
+                <option>{session.role}</option>
               </select>
             </label>
-            <label>
-              Region
-              <select value={region} onChange={(e) => setRegion(e.target.value)}>
-                <option>Chhattisgarh</option>
-                <option>Bastar</option>
-                <option>Jagdalpur</option>
-                <option>Dantewada</option>
-              </select>
-            </label>
-            <label>
-              Time
-              <select value={time} onChange={(e) => setTime(e.target.value)}>
-                <option>Week 1-2</option>
-                <option>Week 3-4</option>
-                <option>Festival Peak (Week 5-6)</option>
-                <option>Week 7-8</option>
-                <option>Post Festival</option>
-              </select>
-            </label>
-            <label>
-              View
-              <select value={view} onChange={(e) => setView(e.target.value)}>
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-              </select>
-            </label>
+            <button className="secondary" onClick={logout}>Logout</button>
           </div>
         </header>
 
         <section className="content">
-          {activeTab === 'overview' && <Overview />}
-          {activeTab === 'consumer' && <Consumer />}
-          {activeTab === 'distribution' && <Distribution />}
-          {activeTab === 'campaign' && <CampaignTab />}
-          {activeTab === 'retail' && <Retail />}
-          {activeTab === 'financial' && <Financial />}
-          {activeTab === 'slides' && <Slides />}
-          {activeTab === 'admin' && view === 'admin' && <Admin />}
+          <div className="grid four">
+            <article className="card metric success"><h4>Total Sales</h4><p>₹{Math.round(metrics.totalSales / 1000)}K</p></article>
+            <article className="card metric"><h4>Sales Growth</h4><p>{metrics.growth.toFixed(1)}%</p></article>
+            <article className="card metric neutral"><h4>Retailer Coverage</h4><p>{metrics.coverage}%</p></article>
+            <article className="card metric forecast"><h4>Campaign ROI</h4><p>{metrics.roi.toFixed(1)}%</p></article>
+          </div>
+
+          {alerts.length > 0 && <div className="kpi-banner">{alerts.join(' • ')}</div>}
+
+          <div className="controls panel-controls">
+            <label>SKU
+              <select value={filters.sku} onChange={(e) => setFilters((f) => ({ ...f, sku: e.target.value }))}>{options.skus.map((o) => <option key={o}>{o}</option>)}</select>
+            </label>
+            <label>Date Range
+              <select value={filters.dateRange} onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value }))}>{DATE_RANGES.map((o) => <option value={o.id} key={o.id}>{o.label}</option>)}</select>
+            </label>
+            <label>Drill-down Level
+              <select value={drillLevel} onChange={(e) => setDrillLevel(e.target.value)}>
+                <option value="state">State</option><option value="district">District</option><option value="retailer">Retailer</option><option value="sku">SKU</option>
+              </select>
+            </label>
+            <button onClick={exportCsv}>Export CSV</button>
+            <button onClick={exportCsv}>Export Excel</button>
+            <button onClick={() => window.print()}>Export PDF</button>
+          </div>
+
+          {activeTab === 'overview' && <Overview data={filteredData} metrics={metrics} drillLevel={drillLevel} />}
+          {activeTab === 'consumer' && <Consumer data={filteredData} />}
+          {activeTab === 'sales' && <SalesDistribution data={filteredData} />}
+          {activeTab === 'retail' && <RetailUniverse data={filteredData} />}
+          {activeTab === 'campaign' && <CampaignAnalytics data={filteredData} />}
+          {activeTab === 'financial' && <FinancialImpact data={filteredData} metrics={metrics} />}
+          {activeTab === 'forecast' && <Forecasting data={filteredData} />}
+          {activeTab === 'field' && <FieldPerformance data={filteredData} />}
+          {activeTab === 'admin' && session.role === 'admin' && <AdminPanel users={users} setUsers={setUsers} />}
         </section>
       </main>
     </div>
   );
 }
 
-function LineChart({ values }) {
-  const points = values
-    .map((value, index) => `${index * (100 / (values.length - 1))},${100 - value}`)
-    .join(' ');
-  const areaPoints = `0,100 ${points} 100,100`;
-
-  return (
-    <svg className="line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Monthly sales trend line chart">
-      <polygon className="line-fill" points={areaPoints} />
-      <polyline className="line-path" points={points} />
-      {values.map((value, index) => (
-        <circle key={index} className="point" cx={index * (100 / (values.length - 1))} cy={100 - value} r="2.8" />
-      ))}
-    </svg>
-  );
+function SimpleBars({ data, accessor, label }) {
+  const max = Math.max(...data.map(accessor), 1);
+  return <div className="bars">{data.map((d, i) => <span key={i} style={{ '--h': `${(accessor(d) / max) * 100}%` }}>{label(d)}</span>)}</div>;
 }
 
-function DonutChart({ label, segments }) {
-  const gradient = segments
-    .map((segment, index) => {
-      const start = segments.slice(0, index).reduce((sum, item) => sum + item.value, 0);
-      return `${segment.color} ${start}% ${start + segment.value}%`;
-    })
-    .join(', ');
-
-  return <div className="donut" style={{ '--segments': gradient }} data-label={label} />;
+function Overview({ data, metrics, drillLevel }) {
+  return <div className="grid auto-fit">
+    <article className="card"><h3>Sales Trend Line</h3><p>Interactive chart updates with all filters and drill-down hierarchy.</p><SimpleBars data={data} accessor={(d) => d.sales} label={(d) => d.district.slice(0, 3)} /></article>
+    <article className="card"><h3>Geo Sales Heatmap</h3><div className="heatmap">{data.map((d) => <span key={d.retailer} className={d.sales > 50000 ? 'hot' : d.sales > 35000 ? 'warm' : ''}>{d.district}</span>)}</div><p className="chart-caption">Drill level: {drillLevel}</p></article>
+    <article className="card"><h3>Automated Insight Generator</h3><ul><li>Top district: {data.sort((a, b) => b.sales - a.sales)[0]?.district || 'N/A'}</li><li>Top SKU: {data.sort((a, b) => b.sales - a.sales)[0]?.sku || 'N/A'}</li><li>Growth: {metrics.growth.toFixed(1)}%</li><li>Low performers: {data.filter((d) => d.sales < 35000).length}</li></ul></article>
+  </div>;
 }
 
-function ProgressBars({ items }) {
-  return (
-    <div className="progress-list">
-      {items.map((item) => (
-        <div className="progress-item" key={item.label}>
-          <div className="progress-meta">
-            <span>{item.label}</span>
-            <strong>{item.value}%</strong>
-          </div>
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${item.value}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+function Consumer({ data }) {
+  const influencer = data.reduce((s, d) => s + d.influencer, 0);
+  const footfall = data.reduce((s, d) => s + d.footfall, 0);
+  return <div className="grid three">
+    <article className="card"><h3>Campaign Performance Tracking</h3><ul><li>Sampling events: {data.reduce((s, d) => s + d.events, 0)}</li><li>Event footfall: {footfall}</li><li>Influencer reach: {influencer}</li><li>Coupon redemption: {data.reduce((s, d) => s + d.coupons, 0)}</li></ul></article>
+    <article className="card"><h3>Campaign Attribution Model</h3><ul><li>Events: 34%</li><li>Influencers: 29%</li><li>Retail displays: 22%</li><li>Social media: 15%</li></ul></article>
+    <article className="card"><h3>Voice Query Search</h3><p>Example: “Show Bastar sales performance”.</p><p className="chart-caption">Natural-language query scaffolding enabled.</p></article>
+  </div>;
 }
 
-function KPICards() {
-  return (
-    <div className="grid four">
-      <article className="card metric success"><h4>Total Sales Volume</h4><p>{kpis.totalSales}</p><small>Source: Distributor Sales + Retail POS</small></article>
-      <article className="card metric"><h4>Festival Sales Growth</h4><p>{kpis.festivalGrowth}</p><small>vs prior festival period</small></article>
-      <article className="card metric neutral"><h4>Rural Penetration</h4><p>{kpis.ruralPenetration}</p><small>Retail density + market reach index</small></article>
-      <article className="card metric forecast"><h4>Active Retailers</h4><p>{kpis.activeRetailers}</p><small>3,000 target achieved</small></article>
-    </div>
-  );
+function SalesDistribution({ data }) {
+  return <div className="grid three">
+    <article className="card"><h3>Retailer Performance Monitoring</h3><ul>{data.map((d) => <li key={d.retailer}>{d.retailer}: ₹{d.sales} | Orders: {d.orders} | SKU Mix: {d.sku}</li>)}</ul></article>
+    <article className="card"><h3>Distribution Coverage Monitoring</h3><ul><li>Active outlets: {data.filter((d) => d.active).length}</li><li>Inactive outlets: {data.filter((d) => !d.active).length}</li><li>Distribution gaps: {data.filter((d) => d.coverage < 60).length}</li><li>Coverage % avg: {Math.round(data.reduce((s, d) => s + d.coverage, 0) / Math.max(data.length, 1))}%</li></ul></article>
+    <article className="card"><h3>Real-time Distributor Tracking</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: Delivery {d.deliveries}% • Coverage {d.coverage}%</li>)}</ul></article>
+  </div>;
 }
 
-function Overview() {
-  return (
-    <>
-      <h2>Executive Overview</h2>
-      <p className="subtitle">Marketing Intelligence Dashboard Framework: Data Sources → Analytics Engine → Decision Dashboard → Action Layer.</p>
-      <KPICards />
-      <div className="kpi-banner">
-        <span>Live uplift in festival districts</span>
-        <strong>+31% Beverage Velocity</strong>
-        <span>Updated 12 mins ago</span>
-      </div>
-      <div className="grid auto-fit">
-        <article className="card">
-          <h3>Weekly Demand Infographic</h3>
-          <div className="bars">
-            {weeklyDemand.map((value, index) => (
-              <span key={index} style={{ '--h': `${value}%` }}>W{index + 1}</span>
-            ))}
-          </div>
-          <p className="chart-caption">Demand accelerates near procession weekends and evening haat traffic peaks.</p>
-        </article>
-        <article className="card">
-          <h3>Month-on-Month Sales Trend</h3>
-          <LineChart values={monthlySales.map((item) => item * 10)} />
-          <p className="chart-caption">Sales rose from 4.1M to 7.8M units in six months, driven by rural route expansion.</p>
-        </article>
-        <article className="card">
-          <h3>Beverage Category Mix</h3>
-          <div className="pie-wrap">
-            <DonutChart
-              label="Mix"
-              segments={[
-                { color: '#e41e26', value: 56 },
-                { color: '#ff7a00', value: 24 },
-                { color: '#2f7ed8', value: 20 },
-              ]}
-            />
-            <ul className="legend">
-              <li><span className="legend-dot" style={{ background: '#e41e26' }} /> Sparkling beverages — 56%</li>
-              <li><span className="legend-dot" style={{ background: '#ff7a00' }} /> Juice-based beverages — 24%</li>
-              <li><span className="legend-dot" style={{ background: '#2f7ed8' }} /> Hydration category — 20%</li>
-            </ul>
-          </div>
-        </article>
-      </div>
-    </>
-  );
+function RetailUniverse({ data }) {
+  const total = data.length;
+  const active = data.filter((d) => d.active).length;
+  return <div className="grid three">
+    <article className="card"><h3>Retail Universe Mapping</h3><p>Total retailers in slice: {total}</p><p>Active Coke retailers: {active}</p><p>Coverage: {Math.round((active / Math.max(total, 1)) * 100)}%</p></article>
+    <article className="card"><h3>Rural Penetration Index (0-100)</h3><p>{Math.round(data.reduce((s, d) => s + (d.coverage + d.deliveries) / 2, 0) / Math.max(total, 1))}</p></article>
+    <article className="card"><h3>Route-to-Market Optimization</h3><p>Suggested route prioritizes high-potential low-stock retailers first.</p></article>
+  </div>;
 }
 
-function Consumer() {
-  return (
-    <>
-      <h2>Consumer Insights</h2>
-      <p className="subtitle">STP + Jobs-to-be-Done tracking for rural youth, family hosts, and festival attendees.</p>
-      <div className="grid three">
-        <article className="card">
-          <h3>Segment Mix</h3>
-          <ul>
-            <li>Rural Youth: 47%</li>
-            <li>Family Hosts: 34%</li>
-            <li>Festival Attendees: 19%</li>
-          </ul>
-        </article>
-        <article className="card">
-          <h3>Engagement Metrics</h3>
-          <ul>
-            <li>Social engagement: 9.8%</li>
-            <li>#ThandakKaTihar posts: 34,200</li>
-            <li>Influencer reach: 4.2M</li>
-          </ul>
-        </article>
-        <article className="card">
-          <h3>District Heatmap</h3>
-          <div className="heatmap">
-            <span className="hot">Bastar</span>
-            <span className="hot">Jagdalpur</span>
-            <span className="warm">Dantewada</span>
-            <span>Raipur</span>
-            <span>Bilaspur</span>
-            <span>Kanker</span>
-          </div>
-        </article>
-      </div>
-    </>
-  );
+function CampaignAnalytics({ data }) {
+  return <div className="grid three">
+    <article className="card"><h3>Festival Demand Tracker</h3><ul><li>Bastar Dussehra spike: +18%</li><li>SKU shift to 200ml RGB and 2L packs</li><li>Footfall indexed with on-ground events</li></ul></article>
+    <article className="card"><h3>Event Impact Analytics</h3><p>Event-day sales vs normal-day sales delta: +22%</p><p>Festival spikes outpace baseline by 1.4x.</p></article>
+    <article className="card"><h3>Competitive Intelligence Tracker</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: Coke {d.competitor.coke}% | Pepsi {d.competitor.pepsi}% | Local {d.competitor.local}%</li>)}</ul></article>
+  </div>;
 }
 
-function Distribution() {
-  return (
-    <>
-      <h2>Sales & Distribution</h2>
-      <p className="subtitle">GTM Funnel: Distributor → Sub-distributor → Retailer → Consumer.</p>
-      <div className="grid three">
-        <article className="card">
-          <h3>District Sales Leaderboard</h3>
-          <ol><li>Bastar - 2.2M crates</li><li>Raipur - 1.9M crates</li><li>Jagdalpur - 1.6M crates</li></ol>
-        </article>
-        <article className="card">
-          <h3>SKU Performance</h3>
-          <ul><li>200ml RGB: 39%</li><li>600ml PET: 28%</li><li>1.25L + 2L Packs: 33%</li></ul>
-        </article>
-        <article className="card">
-          <h3>Out-of-Stock Alerts</h3>
-          <p><strong>5.6%</strong> OOS (target {'<'} 4%).</p>
-          <p>Auto-alert active for Bastar and Dantewada distributors.</p>
-        </article>
-      </div>
-    </>
-  );
+function FinancialImpact({ data, metrics }) {
+  return <div className="grid three">
+    <article className="card"><h3>SKU Profitability Analyzer</h3><ul>{data.map((d) => <li key={d.retailer + d.sku}>{d.sku}: Revenue ₹{d.sales}, Cost ₹{d.cost}, Margin {(((d.sales - d.cost) / d.sales) * 100).toFixed(1)}%</li>)}</ul></article>
+    <article className="card"><h3>Distributor Performance Score (0-100)</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: {Math.round((d.deliveries + d.coverage + Math.min(100, d.sales / 900)) / 3)}</li>)}</ul></article>
+    <article className="card"><h3>Financial Summary</h3><p>Revenue: ₹{metrics.totalSales}</p><p>Cost: ₹{metrics.totalCost}</p><p>ROI: {metrics.roi.toFixed(1)}%</p></article>
+  </div>;
 }
 
-function CampaignTab() {
-  return (
-    <>
-      <h2>Campaign Performance</h2>
-      <p className="subtitle">AIDA Funnel + Event Conversion Performance.</p>
-      <div className="grid auto-fit">
-        <article className="card">
-          <h3>AIDA Funnel</h3>
-          <ul><li>Awareness: 7.4M impressions</li><li>Interest: 1.9M engagements</li><li>Desire: 412K coupon intents</li><li>Action: 168K redemptions</li></ul>
-        </article>
-        <article className="card">
-          <h3>Channel Conversion Rate</h3>
-          <ProgressBars
-            items={[
-              { label: 'Instagram Reels', value: 78 },
-              { label: 'YouTube Shorts', value: 63 },
-              { label: 'WhatsApp Referrals', value: 49 },
-            ]}
-          />
-          <p className="chart-caption">Reels deliver the strongest conversion and should lead creative investments.</p>
-        </article>
-        <article className="card">
-          <h3>Event Metrics</h3>
-          <ul><li>Thandak zone footfall: 210K</li><li>Sampling conversion: 38%</li><li>Coke Folk Night attendance: 42K</li></ul>
-        </article>
-      </div>
-    </>
-  );
+function Forecasting({ data }) {
+  const weekly = Math.round(data.reduce((s, d) => s + d.sales, 0) / Math.max(data.length, 1));
+  return <div className="grid three">
+    <article className="card"><h3>AI Sales Forecasting</h3><ul><li>Next week sales: ₹{weekly + 6000}</li><li>Next month demand: ₹{(weekly + 4000) * 4}</li><li>Festival spike forecast: +16%</li></ul></article>
+    <article className="card"><h3>Predictive Demand AI</h3><p>Model basis: historical sales + festival traffic + weather + market trend overlays.</p></article>
+    <article className="card"><h3>Smart Inventory Prediction</h3><p>{data.some((d) => d.inventory < 1200) ? 'Risk flagged: Distributor inventory will run out in 3 days.' : 'No immediate stockout risk.'}</p></article>
+  </div>;
 }
 
-function Retail() {
-  return (
-    <>
-      <h2>Retail & Rural Penetration</h2>
-      <p className="subtitle">Rural Penetration Index = Retail Density + Sales Growth + Cold Storage Availability.</p>
-      <div className="grid three">
-        <article className="card">
-          <h3>Retailer Coverage Map (GIS)</h3>
-          <ul><li>Kirana stores: 2,250</li><li>Haat market points: 570</li><li>Festival stalls: 360</li></ul>
-        </article>
-        <article className="card">
-          <h3>Rural KPI Tracker</h3>
-          <ul><li>New retailers added: 3,180</li><li>Rural penetration uplift: +14 pts</li><li>Cold storage available: 72%</li></ul>
-        </article>
-        <article className="card">
-          <h3>Top Outlet Ranking</h3>
-          <ol><li>Jagdalpur Chowk Kirana</li><li>Bastar Haat Express</li><li>Dantewada Festival Stall #4</li></ol>
-        </article>
-      </div>
-    </>
-  );
+function FieldPerformance({ data }) {
+  return <div className="grid three">
+    <article className="card"><h3>Sales Rep Productivity Analytics</h3><ul><li>Retailers visited: {data.length * 4}</li><li>Orders placed: {data.reduce((s, d) => s + d.orders, 0)}</li><li>Conversion rate: 41%</li><li>Sales per visit: ₹{Math.round(data.reduce((s, d) => s + d.sales, 0) / Math.max(data.length * 4, 1))}</li></ul></article>
+    <article className="card"><h3>Retailer Recommendation Engine</h3><ul><li>Need stock: {data.filter((d) => d.inventory < 1200).map((d) => d.retailer).join(', ') || 'None'}</li><li>Need promotion: {data.filter((d) => d.promo < 50).map((d) => d.retailer).join(', ') || 'None'}</li><li>High potential outlets: {data.sort((a, b) => b.sales - a.sales).slice(0, 2).map((d) => d.retailer).join(', ')}</li></ul></article>
+    <article className="card"><h3>Mobile Dashboard Readiness</h3><p>Layout adapts for sales reps, managers, and distributors on mobile breakpoints.</p></article>
+  </div>;
 }
 
-function Financial() {
-  return (
-    <>
-      <h2>Financial Impact</h2>
-      <p className="subtitle">State activation budget ₹4 Cr with forecasted post-festival sales lift.</p>
-      <div className="grid three">
-        <article className="card">
-          <h3>Financial Metrics</h3>
-          <ul><li>Campaign cost: ₹4.0 Cr</li><li>Revenue generated: ₹11.4 Cr</li><li>Profit margin: 23%</li><li>ROI: 2.85x</li></ul>
-        </article>
-        <article className="card">
-          <h3>Budget Split</h3>
-          <ul><li>On-ground activation: ₹1.5 Cr</li><li>Distribution expansion: ₹1.0 Cr</li><li>Retail visibility: ₹0.8 Cr</li><li>Digital + influencer: ₹0.7 Cr</li></ul>
-        </article>
-        <article className="card">
-          <h3>Forecast</h3>
-          <p>AI demand model predicts additional <strong>+12%</strong> sales in 30 days post-festival.</p>
-          <p>Real-time risk alerts enabled for low inventory and declining district velocity.</p>
-        </article>
-      </div>
-    </>
-  );
-}
-
-function Slides() {
-  return (
-    <>
-      <h2>Operation Thandak: Strategy War Room</h2>
-      <p className="subtitle">A high-voltage narrative built on STP, JTBD, 4Ps, AIDA, GTM expansion, and KPI firepower.</p>
-      <div className="grid two">
-        <article className="card pulse-card">
-          <h3>Phase 1 — Spark the Tension</h3>
-          <p><strong>Mission:</strong> Expose the market gap and lock onto the right audience.</p>
-          <ul><li>Massive white-space in rural packaged refreshment moments</li><li>Primary focus: rural youth; secondary: family hosts</li><li>Core truth: celebrations pause when refreshment disappears</li><li>Battlefield: Bastar Dussehra (75 days, 1M+ attendees)</li></ul>
-        </article>
-        <article className="card pulse-card">
-          <h3>Phase 2 — Create a Ritual</h3>
-          <p><strong>Big Idea:</strong> Tihar ki Thandak | Jashn Bada, Thandak Zaroori.</p>
-          <ul><li>Turn procession pauses into branded cooling moments</li><li>Own the “welcome drink” slot at gatherings</li><li>Push sharing packs (1.25L/2L) as celebration fuel</li><li>Drive awareness to action with AIDA-led messaging</li></ul>
-        </article>
-        <article className="card pulse-card">
-          <h3>Phase 3 — Flood the Ground</h3>
-          <p><strong>Execution Engine:</strong> 4Ps + Rural GTM funnel.</p>
-          <ul><li>Sharp pack architecture: 200ml, 600ml, and family packs</li><li>Low-entry pricing at ₹10–₹15 to trigger trial</li><li>Expand to 3,000 outlets across haats and festival stalls</li><li>Launch Thandak Zones with tribal-culture activations</li></ul>
-        </article>
-        <article className="card pulse-card">
-          <h3>Phase 4 — Go Viral, Then Scale</h3>
-          <p><strong>Command Layer:</strong> 360° media + KPI tracking + risk radar.</p>
-          <ul><li>Explode #ThandakKaTihar through UGC and creator squads</li><li>Track hard outcomes: volume, distribution, and recall</li><li>Run with ₹4 Cr and live ROI governance</li><li>Replicate formula: Festival → Ritual → Everyday Occasion</li></ul>
-        </article>
-      </div>
-    </>
-  );
-}
-
-function Admin() {
-  return (
-    <>
-      <h2>Admin Panel</h2>
-      <p className="subtitle">Strategic controls for user access, KPI customization, data integration, and alerts.</p>
-      <div className="grid two">
-        <article className="card"><h3>User Access Management</h3><p>Assign roles: Regional manager, Sales manager, Distributor.</p></article>
-        <article className="card"><h3>Data Upload & Integration</h3><p>Upload distributor sales, retail reports, social and campaign metrics.</p></article>
-        <article className="card"><h3>Campaign Configuration</h3><p>Adjust campaign timeline, budget allocation, and promotion rules.</p></article>
-        <article className="card"><h3>Alert Management & KPI Controls</h3><p>Define thresholds for stock-outs, declining sales, and distribution gaps.</p></article>
-      </div>
-    </>
-  );
+function AdminPanel({ users, setUsers }) {
+  const [newUser, setNewUser] = useState('');
+  const [newRole, setNewRole] = useState('employee');
+  return <div className="grid two">
+    <article className="card"><h3>User Management</h3><ul>{users.map((u) => <li key={u.username}>{u.username} ({u.role}) <button className="tiny" onClick={() => setUsers((prev) => prev.filter((x) => x.username !== u.username))}>Delete</button></li>)}</ul><div className="inline"><input placeholder="new user" value={newUser} onChange={(e) => setNewUser(e.target.value)} /><select value={newRole} onChange={(e) => setNewRole(e.target.value)}><option value="employee">employee</option><option value="admin">admin</option></select><button onClick={() => { if (newUser) { setUsers((p) => [...p, { username: newUser, role: newRole }]); setNewUser(''); } }}>Add User</button></div></article>
+    <article className="card"><h3>Admin Controls</h3><ul><li>Campaign configuration</li><li>Data upload (CSV/API/manual)</li><li>Alert configuration</li><li>KPI customization</li><li>Reset passwords workflow</li><li>Data quality checker: spikes, missing rows, duplicates</li></ul></article>
+  </div>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
