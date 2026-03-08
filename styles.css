@@ -367,3 +367,106 @@ body {
   background: radial-gradient(circle, rgba(228, 30, 38, 0.2), rgba(228, 30, 38, 0));
   pointer-events: none;
 }
+
+/* Vibrant visual refresh */
+body {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(228, 30, 38, 0.2), transparent 34%),
+    radial-gradient(circle at 92% 3%, rgba(47, 126, 216, 0.16), transparent 32%),
+    radial-gradient(circle at 20% 90%, rgba(34, 160, 107, 0.14), transparent 30%),
+    linear-gradient(140deg, #f8f9ff 0%, #fff7f8 45%, #f6fbff 100%);
+}
+
+.sidebar {
+  background: linear-gradient(200deg, #170709 0%, #291216 45%, #35111a 100%);
+}
+
+.logo-wrap .dot {
+  box-shadow: 0 0 0 6px rgba(228, 30, 38, 0.16), 0 0 28px rgba(228, 30, 38, 0.45);
+}
+
+.nav-btn {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-btn.active,
+.nav-btn:hover {
+  background: linear-gradient(95deg, #ff3f4e 0%, #e41e26 55%, #b30010 100%);
+}
+
+.topbar {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.76));
+  backdrop-filter: blur(8px);
+}
+
+h2 {
+  background: linear-gradient(90deg, #e41e26 0%, #ff7a00 45%, #7d56f5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.65rem;
+}
+
+.subtitle {
+  color: #4a5563;
+  font-weight: 500;
+}
+
+.card {
+  border: 1px solid rgba(228, 30, 38, 0.08);
+  box-shadow: 0 12px 28px rgba(29, 41, 54, 0.1);
+}
+
+.grid.auto-fit .card:nth-child(1) {
+  background: linear-gradient(180deg, #ffffff 0%, #fff8f9 100%);
+}
+
+.grid.auto-fit .card:nth-child(2) {
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+}
+
+.grid.auto-fit .card:nth-child(3) {
+  background: linear-gradient(180deg, #ffffff 0%, #f9f7ff 100%);
+}
+
+.metric {
+  border-left-width: 6px;
+  background: linear-gradient(130deg, #ffffff 0%, #fff8f7 100%);
+}
+
+.kpi-banner {
+  background: linear-gradient(105deg, #ff4f5b 0%, #e41e26 38%, #7d56f5 100%);
+  box-shadow: 0 16px 28px rgba(125, 86, 245, 0.28);
+}
+
+.kpi-banner strong {
+  letter-spacing: 0.3px;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+}
+
+.bars span {
+  box-shadow: 0 10px 16px rgba(228, 30, 38, 0.28);
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #ff7a00 0%, #e41e26 50%, #7d56f5 100%);
+}
+
+.heatmap span {
+  border: 1px solid rgba(47, 126, 216, 0.14);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f6ff 100%);
+}
+
+.heatmap .hot {
+  background: linear-gradient(120deg, #ff5d69 0%, #e41e26 100%);
+}
+
+.heatmap .warm {
+  background: linear-gradient(120deg, #ffc164 0%, #ff8f00 100%);
+  color: #fff;
+}
+
+.donut {
+  box-shadow: 0 14px 24px rgba(47, 126, 216, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
