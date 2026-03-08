@@ -1,8 +1,8 @@
 const { useEffect, useMemo, useState } = React;
 
-const LOGIN_USERS = {
-  admin: { password: 'admin', role: 'admin', name: 'Admin User' },
+const DEFAULT_ACCOUNTS = {
   employee: { password: 'employee', role: 'employee', name: 'Employee User' },
+  admin: { password: 'admin', role: 'admin', name: 'Admin User' },
 };
 
 const GUEST_SESSION = { username: 'employee', role: 'employee', name: 'Employee Guest' };
@@ -49,6 +49,39 @@ const DATE_RANGES = [
 
 const REFERENCE_DATE = new Date('2026-10-12');
 
+const toDisplayName = (username) => username
+  .split(/[._\s-]+/)
+  .filter(Boolean)
+  .map((part) => `${part[0].toUpperCase()}${part.slice(1).toLowerCase()}`)
+  .join(' ');
+
+const randomDelta = (value, maxChange, minValue = 0, maxValue = Number.POSITIVE_INFINITY) => {
+  const delta = Math.round((Math.random() * 2 - 1) * maxChange);
+  return Math.max(minValue, Math.min(maxValue, value + delta));
+};
+
+const simulateLiveRows = (rows) => rows.map((row) => {
+  const sales = randomDelta(row.sales, 3500, 10000);
+  const inventory = randomDelta(row.inventory, 220, 250);
+  const orders = randomDelta(row.orders, 4, 1);
+  const deliveries = randomDelta(row.deliveries, 3, 45, 99);
+  const coverage = randomDelta(row.coverage, 3, 40, 99);
+  const promo = randomDelta(row.promo, 4, 20, 95);
+  const cost = Math.round(sales * (0.56 + Math.random() * 0.14));
+
+  return {
+    ...row,
+    sales,
+    inventory,
+    orders,
+    deliveries,
+    coverage,
+    promo,
+    cost,
+    active: coverage >= 55,
+  };
+});
+
 
 const matchesDateRange = (rowDate, dateRange) => {
   if (dateRange === 'all') return true;
@@ -63,16 +96,16 @@ const uniqueValues = (rows, field) => [...new Set(rows.map((row) => row[field]))
 
 const getDisplayData = (data) => (data.length ? data : [FALLBACK_ROW]);
 
-function LoginScreen({ onLogin }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin');
+function LoginScreen({ onLogin, loginUsers }) {
+  const [username, setUsername] = useState('employee');
+  const [password, setPassword] = useState('employee');
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
 
   const submit = (e) => {
     e.preventDefault();
     const normalizedUsername = username.trim().toLowerCase();
-    const account = LOGIN_USERS[normalizedUsername];
+    const account = loginUsers[normalizedUsername];
     if (!account || account.password !== password) {
       setError('Invalid credentials. Username is case-insensitive but password is case-sensitive.');
       return;
@@ -84,12 +117,12 @@ function LoginScreen({ onLogin }) {
     <div className="login-shell">
       <form className="login-card" onSubmit={submit}>
         <h1>Coca-Cola FMCG Dashboard</h1>
-        <p>Admin login: admin/admin. Employee dashboard is available without login.</p>
+        <p>Use employee access by default. Hint username: employee | Password: employee.</p>
         <label>Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin or employee" />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="employee" />
         </label>
         <label>Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="employee" />
         </label>
         <label className="check">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember session
@@ -114,13 +147,22 @@ function App() {
   const [drillLevel, setDrillLevel] = useState('state');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [filters, setFilters] = useState({ region: 'All', district: 'All', sku: 'All', campaign: 'All', dateRange: 'all' });
+  const [liveData, setLiveData] = useState(() => SALES_DATA);
   const [users, setUsers] = useState([
-    { username: 'admin', role: 'admin' },
-    { username: 'employee', role: 'employee' },
+    { username: 'employee', role: 'employee', password: DEFAULT_ACCOUNTS.employee.password, name: DEFAULT_ACCOUNTS.employee.name },
+    { username: 'admin', role: 'admin', password: DEFAULT_ACCOUNTS.admin.password, name: DEFAULT_ACCOUNTS.admin.name },
   ]);
 
+  const loginUsers = useMemo(() => users.reduce((acc, user) => {
+    acc[user.username] = { password: user.password, role: user.role, name: user.name };
+    return acc;
+  }, {}), [users]);
+
   useEffect(() => {
-    const timer = setInterval(() => setLastRefresh(new Date()), 60000);
+    const timer = setInterval(() => {
+      setLiveData((prev) => simulateLiveRows(prev));
+      setLastRefresh(new Date());
+    }, 20000);
     return () => clearInterval(timer);
   }, []);
 
@@ -140,7 +182,7 @@ function App() {
   };
 
   const filteredData = useMemo(() => {
-    return SALES_DATA.filter((row) => {
+    return liveData.filter((row) => {
       const matchesRegion = filters.region === 'All' || row.state === filters.region;
       const matchesDistrict = filters.district === 'All' || row.district === filters.district;
       const matchesSku = filters.sku === 'All' || row.sku === filters.sku;
@@ -148,10 +190,10 @@ function App() {
       const matchesDate = matchesDateRange(row.date, filters.dateRange);
       return matchesRegion && matchesDistrict && matchesSku && matchesCampaign && matchesDate;
     });
-  }, [filters]);
+  }, [filters, liveData]);
 
   const options = useMemo(() => {
-    const inRangeRows = SALES_DATA.filter((row) => matchesDateRange(row.date, filters.dateRange));
+    const inRangeRows = liveData.filter((row) => matchesDateRange(row.date, filters.dateRange));
     const rowsForRegions = inRangeRows;
     const rowsForDistricts = inRangeRows.filter((row) => filters.region === 'All' || row.state === filters.region);
     const rowsForSkus = inRangeRows.filter(
@@ -171,7 +213,7 @@ function App() {
       skus: ['All', ...uniqueValues(rowsForSkus, 'sku')],
       campaigns: ['All', ...uniqueValues(rowsForCampaigns, 'campaign')],
     };
-  }, [filters.region, filters.district, filters.sku, filters.campaign, filters.dateRange]);
+  }, [liveData, filters.region, filters.district, filters.sku, filters.campaign, filters.dateRange]);
 
   useEffect(() => {
     setFilters((prev) => {
@@ -248,7 +290,7 @@ function App() {
       </aside>
       <main className="main">
         <header className="topbar">
-          <div className="summary">Real-time FMCG Dashboard • Auto-refresh every 60s • Last refresh: {lastRefresh.toLocaleTimeString()}</div>
+          <div className="summary">Real-time FMCG Dashboard • Auto-refresh every 20s • Last refresh: {lastRefresh.toLocaleTimeString()}</div>
           <div className="controls">
             <label>Region
               <select value={filters.region} onChange={(e) => setFilters((f) => ({ ...f, region: e.target.value }))}>{options.regions.map((o) => <option key={o}>{o}</option>)}</select>
@@ -269,7 +311,7 @@ function App() {
           </div>
         </header>
 
-        {showLogin && <LoginScreen onLogin={onLogin} />}
+        {showLogin && <LoginScreen onLogin={onLogin} loginUsers={loginUsers} />}
 
         <section className="content">
           <div className="grid four">
@@ -399,9 +441,33 @@ function FieldPerformance({ data }) {
 
 function AdminPanel({ users, setUsers }) {
   const [newUser, setNewUser] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('employee');
+  const [error, setError] = useState('');
+
+  const addUser = () => {
+    const username = newUser.trim().toLowerCase();
+    const password = newPassword.trim();
+    if (!username || !password) {
+      setError('Please provide both username and password.');
+      return;
+    }
+    if (users.some((u) => u.username === username)) {
+      setError('User already exists.');
+      return;
+    }
+    const name = newName.trim() || toDisplayName(username);
+    setUsers((p) => [...p, { username, role: newRole, password, name }]);
+    setNewUser('');
+    setNewName('');
+    setNewPassword('');
+    setNewRole('employee');
+    setError('');
+  };
+
   return <div className="grid two">
-    <article className="card"><h3>User Management</h3><ul>{users.map((u) => <li key={u.username}>{u.username} ({u.role}) <button className="tiny" onClick={() => setUsers((prev) => prev.filter((x) => x.username !== u.username))}>Delete</button></li>)}</ul><div className="inline"><input placeholder="new user" value={newUser} onChange={(e) => setNewUser(e.target.value)} /><select value={newRole} onChange={(e) => setNewRole(e.target.value)}><option value="employee">employee</option><option value="admin">admin</option></select><button onClick={() => { if (newUser) { setUsers((p) => [...p, { username: newUser, role: newRole }]); setNewUser(''); } }}>Add User</button></div></article>
+    <article className="card"><h3>User Management</h3><ul>{users.map((u) => <li key={u.username}>{u.username} ({u.role}) • password set <button className="tiny" onClick={() => setUsers((prev) => prev.filter((x) => x.username !== u.username))}>Delete</button></li>)}</ul><div className="inline"><input placeholder="new user (hint: employee)" value={newUser} onChange={(e) => setNewUser(e.target.value)} /><input placeholder="name" value={newName} onChange={(e) => setNewName(e.target.value)} /><input type="password" placeholder="password (hint: employee)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /><select value={newRole} onChange={(e) => setNewRole(e.target.value)}><option value="employee">employee</option><option value="admin">admin</option></select><button onClick={addUser}>Add User</button></div>{error && <p className="error">{error}</p>}</article>
     <article className="card"><h3>Admin Controls</h3><ul><li>Campaign configuration</li><li>Data upload (CSV/API/manual)</li><li>Alert configuration</li><li>KPI customization</li><li>Reset passwords workflow</li><li>Data quality checker: spikes, missing rows, duplicates</li></ul></article>
   </div>;
 }
