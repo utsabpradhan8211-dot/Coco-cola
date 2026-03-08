@@ -47,6 +47,19 @@ const DATE_RANGES = [
   { id: 'last30', label: 'Last 30 days' },
 ];
 
+const REFERENCE_DATE = new Date('2026-10-12');
+
+
+const matchesDateRange = (rowDate, dateRange) => {
+  if (dateRange === 'all') return true;
+  const diffDays = (REFERENCE_DATE - new Date(rowDate)) / (1000 * 60 * 60 * 24);
+  if (dateRange === 'last7') return diffDays <= 7;
+  if (dateRange === 'last30') return diffDays <= 30;
+  return true;
+};
+
+const uniqueValues = (rows, field) => [...new Set(rows.map((row) => row[field]))];
+
 
 const getDisplayData = (data) => (data.length ? data : [FALLBACK_ROW]);
 
@@ -127,27 +140,64 @@ function App() {
   };
 
   const filteredData = useMemo(() => {
-    const now = new Date('2026-10-12');
     return SALES_DATA.filter((row) => {
       const matchesRegion = filters.region === 'All' || row.state === filters.region;
       const matchesDistrict = filters.district === 'All' || row.district === filters.district;
       const matchesSku = filters.sku === 'All' || row.sku === filters.sku;
       const matchesCampaign = filters.campaign === 'All' || row.campaign === filters.campaign;
-      const diffDays = (now - new Date(row.date)) / (1000 * 60 * 60 * 24);
-      const matchesDate =
-        filters.dateRange === 'all' ||
-        (filters.dateRange === 'last7' && diffDays <= 7) ||
-        (filters.dateRange === 'last30' && diffDays <= 30);
+      const matchesDate = matchesDateRange(row.date, filters.dateRange);
       return matchesRegion && matchesDistrict && matchesSku && matchesCampaign && matchesDate;
     });
   }, [filters]);
 
-  const options = useMemo(() => ({
-    regions: ['All', ...new Set(SALES_DATA.map((d) => d.state))],
-    districts: ['All', ...new Set(SALES_DATA.map((d) => d.district))],
-    skus: ['All', ...new Set(SALES_DATA.map((d) => d.sku))],
-    campaigns: ['All', ...new Set(SALES_DATA.map((d) => d.campaign))],
-  }), []);
+  const options = useMemo(() => {
+    const inRangeRows = SALES_DATA.filter((row) => matchesDateRange(row.date, filters.dateRange));
+    const rowsForRegions = inRangeRows;
+    const rowsForDistricts = inRangeRows.filter((row) => filters.region === 'All' || row.state === filters.region);
+    const rowsForSkus = inRangeRows.filter(
+      (row) => (filters.region === 'All' || row.state === filters.region)
+        && (filters.district === 'All' || row.district === filters.district)
+        && (filters.campaign === 'All' || row.campaign === filters.campaign),
+    );
+    const rowsForCampaigns = inRangeRows.filter(
+      (row) => (filters.region === 'All' || row.state === filters.region)
+        && (filters.district === 'All' || row.district === filters.district)
+        && (filters.sku === 'All' || row.sku === filters.sku),
+    );
+
+    return {
+      regions: ['All', ...uniqueValues(rowsForRegions, 'state')],
+      districts: ['All', ...uniqueValues(rowsForDistricts, 'district')],
+      skus: ['All', ...uniqueValues(rowsForSkus, 'sku')],
+      campaigns: ['All', ...uniqueValues(rowsForCampaigns, 'campaign')],
+    };
+  }, [filters.region, filters.district, filters.sku, filters.campaign, filters.dateRange]);
+
+  useEffect(() => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      if (!options.regions.includes(prev.region)) {
+        next.region = 'All';
+        changed = true;
+      }
+      if (!options.districts.includes(prev.district)) {
+        next.district = 'All';
+        changed = true;
+      }
+      if (!options.skus.includes(prev.sku)) {
+        next.sku = 'All';
+        changed = true;
+      }
+      if (!options.campaigns.includes(prev.campaign)) {
+        next.campaign = 'All';
+        changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [options]);
 
   const metrics = useMemo(() => {
     const totalSales = filteredData.reduce((sum, row) => sum + row.sales, 0);
