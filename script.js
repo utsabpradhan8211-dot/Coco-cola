@@ -5,6 +5,22 @@ const LOGIN_USERS = {
   employee: { password: 'employee', role: 'employee', name: 'Employee User' },
 };
 
+const GUEST_SESSION = { username: 'employee', role: 'employee', name: 'Employee Guest' };
+
+const FALLBACK_ROW = {
+  district: 'No matching data',
+  retailer: 'No retailer in current filters',
+  sku: 'No SKU available',
+  competitor: { coke: 0, pepsi: 0, local: 0 },
+  sales: 0,
+  coverage: 0,
+  deliveries: 0,
+  inventory: 0,
+  promo: 0,
+  orders: 0,
+  cost: 0,
+};
+
 const SIDEBAR_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'consumer', label: 'Consumer Insights' },
@@ -31,27 +47,31 @@ const DATE_RANGES = [
   { id: 'last30', label: 'Last 30 days' },
 ];
 
+
+const getDisplayData = (data) => (data.length ? data : [FALLBACK_ROW]);
+
 function LoginScreen({ onLogin }) {
-  const [username, setUsername] = useState('employee');
-  const [password, setPassword] = useState('employee');
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('admin');
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
 
   const submit = (e) => {
     e.preventDefault();
-    const account = LOGIN_USERS[username];
+    const normalizedUsername = username.trim().toLowerCase();
+    const account = LOGIN_USERS[normalizedUsername];
     if (!account || account.password !== password) {
-      setError('Invalid credentials. Use admin/admin or employee/employee.');
+      setError('Invalid credentials. Username is case-insensitive but password is case-sensitive.');
       return;
     }
-    onLogin({ username, role: account.role, name: account.name, remember });
+    onLogin({ username: normalizedUsername, role: account.role, name: account.name, remember });
   };
 
   return (
     <div className="login-shell">
       <form className="login-card" onSubmit={submit}>
         <h1>Coca-Cola FMCG Dashboard</h1>
-        <p>Login with role-based access control.</p>
+        <p>Admin login: admin/admin. Employee dashboard is available without login.</p>
         <label>Username
           <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin or employee" />
         </label>
@@ -62,7 +82,10 @@ function LoginScreen({ onLogin }) {
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember session
         </label>
         {error && <p className="error">{error}</p>}
-        <button type="submit">Login</button>
+        <div className="inline">
+          <button type="submit">Login</button>
+          <button type="button" className="secondary" onClick={() => onLogin({ ...GUEST_SESSION, remember: false })}>Continue without login</button>
+        </div>
       </form>
     </div>
   );
@@ -71,8 +94,9 @@ function LoginScreen({ onLogin }) {
 function App() {
   const [session, setSession] = useState(() => {
     const saved = localStorage.getItem('coke-session');
-    return saved ? JSON.parse(saved) : null;
+    return saved ? JSON.parse(saved) : GUEST_SESSION;
   });
+  const [showLogin, setShowLogin] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [drillLevel, setDrillLevel] = useState('state');
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -89,6 +113,7 @@ function App() {
 
   const onLogin = ({ remember, ...rest }) => {
     setSession(rest);
+    setShowLogin(false);
     if (remember) {
       localStorage.setItem('coke-session', JSON.stringify(rest));
     } else {
@@ -98,7 +123,7 @@ function App() {
 
   const logout = () => {
     localStorage.removeItem('coke-session');
-    setSession(null);
+    setSession(GUEST_SESSION);
   };
 
   const filteredData = useMemo(() => {
@@ -143,8 +168,6 @@ function App() {
     return flags;
   }, [filteredData, metrics.growth]);
 
-  if (!session) return <LoginScreen onLogin={onLogin} />;
-
   const allowedTabs = SIDEBAR_TABS.filter((tab) => !tab.adminOnly || session.role === 'admin');
 
   const exportCsv = () => {
@@ -188,12 +211,15 @@ function App() {
             </label>
             <label>User
               <select value={session.role} disabled>
-                <option>{session.role}</option>
+                <option>{session.name} ({session.role})</option>
               </select>
             </label>
+            <button className="secondary" onClick={() => setShowLogin(true)}>Login</button>
             <button className="secondary" onClick={logout}>Logout</button>
           </div>
         </header>
+
+        {showLogin && <LoginScreen onLogin={onLogin} />}
 
         <section className="content">
           <div className="grid four">
@@ -243,70 +269,80 @@ function SimpleBars({ data, accessor, label }) {
 }
 
 function Overview({ data, metrics, drillLevel }) {
+  const displayData = getDisplayData(data);
+  const topBySales = [...displayData].sort((a, b) => b.sales - a.sales)[0] || FALLBACK_ROW;
   return <div className="grid auto-fit">
-    <article className="card"><h3>Sales Trend Line</h3><p>Interactive chart updates with all filters and drill-down hierarchy.</p><SimpleBars data={data} accessor={(d) => d.sales} label={(d) => d.district.slice(0, 3)} /></article>
-    <article className="card"><h3>Geo Sales Heatmap</h3><div className="heatmap">{data.map((d) => <span key={d.retailer} className={d.sales > 50000 ? 'hot' : d.sales > 35000 ? 'warm' : ''}>{d.district}</span>)}</div><p className="chart-caption">Drill level: {drillLevel}</p></article>
-    <article className="card"><h3>Automated Insight Generator</h3><ul><li>Top district: {data.sort((a, b) => b.sales - a.sales)[0]?.district || 'N/A'}</li><li>Top SKU: {data.sort((a, b) => b.sales - a.sales)[0]?.sku || 'N/A'}</li><li>Growth: {metrics.growth.toFixed(1)}%</li><li>Low performers: {data.filter((d) => d.sales < 35000).length}</li></ul></article>
+    <article className="card"><h3>Sales Trend Line</h3><p>Interactive chart updates with all filters and drill-down hierarchy.</p><SimpleBars data={displayData} accessor={(d) => d.sales} label={(d) => (d.district || 'N/A').slice(0, 3)} /></article>
+    <article className="card"><h3>Geo Sales Heatmap</h3><div className="heatmap">{displayData.map((d, i) => <span key={`${d.retailer}-${i}`} className={d.sales > 50000 ? 'hot' : d.sales > 35000 ? 'warm' : ''}>{d.district}</span>)}</div><p className="chart-caption">Drill level: {drillLevel}</p></article>
+    <article className="card"><h3>Automated Insight Generator</h3><ul><li>Top district: {topBySales.district || 'N/A'}</li><li>Top SKU: {topBySales.sku || 'N/A'}</li><li>Growth: {metrics.growth.toFixed(1)}%</li><li>Low performers: {displayData.filter((d) => d.sales < 35000).length}</li></ul></article>
   </div>;
 }
 
 function Consumer({ data }) {
-  const influencer = data.reduce((s, d) => s + d.influencer, 0);
-  const footfall = data.reduce((s, d) => s + d.footfall, 0);
+  const displayData = getDisplayData(data);
+  const influencer = displayData.reduce((s, d) => s + (d.influencer || 0), 0);
+  const footfall = displayData.reduce((s, d) => s + (d.footfall || 0), 0);
   return <div className="grid three">
-    <article className="card"><h3>Campaign Performance Tracking</h3><ul><li>Sampling events: {data.reduce((s, d) => s + d.events, 0)}</li><li>Event footfall: {footfall}</li><li>Influencer reach: {influencer}</li><li>Coupon redemption: {data.reduce((s, d) => s + d.coupons, 0)}</li></ul></article>
+    <article className="card"><h3>Campaign Performance Tracking</h3><ul><li>Sampling events: {displayData.reduce((s, d) => s + (d.events || 0), 0)}</li><li>Event footfall: {footfall}</li><li>Influencer reach: {influencer}</li><li>Coupon redemption: {displayData.reduce((s, d) => s + (d.coupons || 0), 0)}</li></ul></article>
     <article className="card"><h3>Campaign Attribution Model</h3><ul><li>Events: 34%</li><li>Influencers: 29%</li><li>Retail displays: 22%</li><li>Social media: 15%</li></ul></article>
     <article className="card"><h3>Voice Query Search</h3><p>Example: “Show Bastar sales performance”.</p><p className="chart-caption">Natural-language query scaffolding enabled.</p></article>
   </div>;
 }
 
 function SalesDistribution({ data }) {
+  const displayData = getDisplayData(data);
   return <div className="grid three">
-    <article className="card"><h3>Retailer Performance Monitoring</h3><ul>{data.map((d) => <li key={d.retailer}>{d.retailer}: ₹{d.sales} | Orders: {d.orders} | SKU Mix: {d.sku}</li>)}</ul></article>
-    <article className="card"><h3>Distribution Coverage Monitoring</h3><ul><li>Active outlets: {data.filter((d) => d.active).length}</li><li>Inactive outlets: {data.filter((d) => !d.active).length}</li><li>Distribution gaps: {data.filter((d) => d.coverage < 60).length}</li><li>Coverage % avg: {Math.round(data.reduce((s, d) => s + d.coverage, 0) / Math.max(data.length, 1))}%</li></ul></article>
-    <article className="card"><h3>Real-time Distributor Tracking</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: Delivery {d.deliveries}% • Coverage {d.coverage}%</li>)}</ul></article>
+    <article className="card"><h3>Retailer Performance Monitoring</h3><ul>{displayData.map((d, i) => <li key={`${d.retailer}-${i}`}>{d.retailer}: ₹{d.sales} | Orders: {d.orders} | SKU Mix: {d.sku}</li>)}</ul></article>
+    <article className="card"><h3>Distribution Coverage Monitoring</h3><ul><li>Active outlets: {displayData.filter((d) => d.active).length}</li><li>Inactive outlets: {displayData.filter((d) => !d.active).length}</li><li>Distribution gaps: {displayData.filter((d) => d.coverage < 60).length}</li><li>Coverage % avg: {Math.round(displayData.reduce((s, d) => s + d.coverage, 0) / Math.max(displayData.length, 1))}%</li></ul></article>
+    <article className="card"><h3>Real-time Distributor Tracking</h3><ul>{displayData.map((d, i) => <li key={`${d.district}-${i}`}>{d.district}: Delivery {d.deliveries}% • Coverage {d.coverage}%</li>)}</ul></article>
   </div>;
 }
 
 function RetailUniverse({ data }) {
-  const total = data.length;
-  const active = data.filter((d) => d.active).length;
+  const displayData = getDisplayData(data);
+  const total = displayData.length;
+  const active = displayData.filter((d) => d.active).length;
   return <div className="grid three">
     <article className="card"><h3>Retail Universe Mapping</h3><p>Total retailers in slice: {total}</p><p>Active Coke retailers: {active}</p><p>Coverage: {Math.round((active / Math.max(total, 1)) * 100)}%</p></article>
-    <article className="card"><h3>Rural Penetration Index (0-100)</h3><p>{Math.round(data.reduce((s, d) => s + (d.coverage + d.deliveries) / 2, 0) / Math.max(total, 1))}</p></article>
+    <article className="card"><h3>Rural Penetration Index (0-100)</h3><p>{Math.round(displayData.reduce((s, d) => s + (d.coverage + d.deliveries) / 2, 0) / Math.max(total, 1))}</p></article>
     <article className="card"><h3>Route-to-Market Optimization</h3><p>Suggested route prioritizes high-potential low-stock retailers first.</p></article>
   </div>;
 }
 
 function CampaignAnalytics({ data }) {
+  const displayData = getDisplayData(data);
   return <div className="grid three">
     <article className="card"><h3>Festival Demand Tracker</h3><ul><li>Bastar Dussehra spike: +18%</li><li>SKU shift to 200ml RGB and 2L packs</li><li>Footfall indexed with on-ground events</li></ul></article>
     <article className="card"><h3>Event Impact Analytics</h3><p>Event-day sales vs normal-day sales delta: +22%</p><p>Festival spikes outpace baseline by 1.4x.</p></article>
-    <article className="card"><h3>Competitive Intelligence Tracker</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: Coke {d.competitor.coke}% | Pepsi {d.competitor.pepsi}% | Local {d.competitor.local}%</li>)}</ul></article>
+    <article className="card"><h3>Competitive Intelligence Tracker</h3><ul>{displayData.map((d, i) => <li key={`${d.district}-${i}`}>{d.district}: Coke {d.competitor.coke}% | Pepsi {d.competitor.pepsi}% | Local {d.competitor.local}%</li>)}</ul></article>
   </div>;
 }
 
 function FinancialImpact({ data, metrics }) {
+  const displayData = getDisplayData(data);
   return <div className="grid three">
-    <article className="card"><h3>SKU Profitability Analyzer</h3><ul>{data.map((d) => <li key={d.retailer + d.sku}>{d.sku}: Revenue ₹{d.sales}, Cost ₹{d.cost}, Margin {(((d.sales - d.cost) / d.sales) * 100).toFixed(1)}%</li>)}</ul></article>
-    <article className="card"><h3>Distributor Performance Score (0-100)</h3><ul>{data.map((d) => <li key={d.district}>{d.district}: {Math.round((d.deliveries + d.coverage + Math.min(100, d.sales / 900)) / 3)}</li>)}</ul></article>
+    <article className="card"><h3>SKU Profitability Analyzer</h3><ul>{displayData.map((d, i) => <li key={`${d.retailer}-${d.sku}-${i}`}>{d.sku}: Revenue ₹{d.sales}, Cost ₹{d.cost}, Margin {d.sales ? (((d.sales - d.cost) / d.sales) * 100).toFixed(1) : '0.0'}%</li>)}</ul></article>
+    <article className="card"><h3>Distributor Performance Score (0-100)</h3><ul>{displayData.map((d, i) => <li key={`${d.district}-${i}`}>{d.district}: {Math.round((d.deliveries + d.coverage + Math.min(100, d.sales / 900)) / 3)}</li>)}</ul></article>
     <article className="card"><h3>Financial Summary</h3><p>Revenue: ₹{metrics.totalSales}</p><p>Cost: ₹{metrics.totalCost}</p><p>ROI: {metrics.roi.toFixed(1)}%</p></article>
   </div>;
 }
 
 function Forecasting({ data }) {
-  const weekly = Math.round(data.reduce((s, d) => s + d.sales, 0) / Math.max(data.length, 1));
+  const displayData = getDisplayData(data);
+  const weekly = Math.round(displayData.reduce((s, d) => s + d.sales, 0) / Math.max(displayData.length, 1));
   return <div className="grid three">
     <article className="card"><h3>AI Sales Forecasting</h3><ul><li>Next week sales: ₹{weekly + 6000}</li><li>Next month demand: ₹{(weekly + 4000) * 4}</li><li>Festival spike forecast: +16%</li></ul></article>
     <article className="card"><h3>Predictive Demand AI</h3><p>Model basis: historical sales + festival traffic + weather + market trend overlays.</p></article>
-    <article className="card"><h3>Smart Inventory Prediction</h3><p>{data.some((d) => d.inventory < 1200) ? 'Risk flagged: Distributor inventory will run out in 3 days.' : 'No immediate stockout risk.'}</p></article>
+    <article className="card"><h3>Smart Inventory Prediction</h3><p>{displayData.some((d) => d.inventory < 1200) ? 'Risk flagged: Distributor inventory will run out in 3 days.' : 'No immediate stockout risk.'}</p></article>
   </div>;
 }
 
 function FieldPerformance({ data }) {
+  const displayData = getDisplayData(data);
+  const highPotential = [...displayData].sort((a, b) => b.sales - a.sales).slice(0, 2).map((d) => d.retailer).join(', ');
   return <div className="grid three">
-    <article className="card"><h3>Sales Rep Productivity Analytics</h3><ul><li>Retailers visited: {data.length * 4}</li><li>Orders placed: {data.reduce((s, d) => s + d.orders, 0)}</li><li>Conversion rate: 41%</li><li>Sales per visit: ₹{Math.round(data.reduce((s, d) => s + d.sales, 0) / Math.max(data.length * 4, 1))}</li></ul></article>
-    <article className="card"><h3>Retailer Recommendation Engine</h3><ul><li>Need stock: {data.filter((d) => d.inventory < 1200).map((d) => d.retailer).join(', ') || 'None'}</li><li>Need promotion: {data.filter((d) => d.promo < 50).map((d) => d.retailer).join(', ') || 'None'}</li><li>High potential outlets: {data.sort((a, b) => b.sales - a.sales).slice(0, 2).map((d) => d.retailer).join(', ')}</li></ul></article>
+    <article className="card"><h3>Sales Rep Productivity Analytics</h3><ul><li>Retailers visited: {displayData.length * 4}</li><li>Orders placed: {displayData.reduce((s, d) => s + d.orders, 0)}</li><li>Conversion rate: 41%</li><li>Sales per visit: ₹{Math.round(displayData.reduce((s, d) => s + d.sales, 0) / Math.max(displayData.length * 4, 1))}</li></ul></article>
+    <article className="card"><h3>Retailer Recommendation Engine</h3><ul><li>Need stock: {displayData.filter((d) => d.inventory < 1200).map((d) => d.retailer).join(', ') || 'None'}</li><li>Need promotion: {displayData.filter((d) => d.promo < 50).map((d) => d.retailer).join(', ') || 'None'}</li><li>High potential outlets: {highPotential || 'No high potential outlet in current filter'}</li></ul></article>
     <article className="card"><h3>Mobile Dashboard Readiness</h3><p>Layout adapts for sales reps, managers, and distributors on mobile breakpoints.</p></article>
   </div>;
 }
