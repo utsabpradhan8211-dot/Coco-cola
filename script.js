@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { id: 'campaign', label: 'Campaign Performance' },
   { id: 'retail', label: 'Retail & Rural Penetration' },
   { id: 'financial', label: 'Financial Impact' },
-  { id: 'slides', label: '4-Slide Strategy' },
+  { id: 'slides', label: 'Strategy War Room' },
   { id: 'admin', label: 'Admin Panel' },
 ];
 
@@ -287,28 +287,28 @@ function Financial() {
 function Slides() {
   return (
     <>
-      <h2>Case Competition 4-Slide Structure</h2>
-      <p className="subtitle">Consulting-style structure using STP, JTBD, 4Ps, AIDA, GTM funnel, and KPI framework.</p>
+      <h2>Operation Thandak: Strategy War Room</h2>
+      <p className="subtitle">A high-voltage narrative built on STP, JTBD, 4Ps, AIDA, GTM expansion, and KPI firepower.</p>
       <div className="grid two">
-        <article className="card">
-          <h3>Slide 1: Problem + Insight + Festival</h3>
-          <p><strong>Frameworks:</strong> Market Gap + STP + Jobs-to-be-Done.</p>
-          <ul><li>Underpenetrated rural packaged beverage market</li><li>Targets: rural youth (primary), family hosts (secondary)</li><li>Core insight: “refreshment enables celebrations to continue”</li><li>Festival anchor: Bastar Dussehra (75 days, 1M+ attendees)</li></ul>
+        <article className="card pulse-card">
+          <h3>Phase 1 — Spark the Tension</h3>
+          <p><strong>Mission:</strong> Expose the market gap and lock onto the right audience.</p>
+          <ul><li>Massive white-space in rural packaged refreshment moments</li><li>Primary focus: rural youth; secondary: family hosts</li><li>Core truth: celebrations pause when refreshment disappears</li><li>Battlefield: Bastar Dussehra (75 days, 1M+ attendees)</li></ul>
         </article>
-        <article className="card">
-          <h3>Slide 2: Big Idea + Occasion Creation</h3>
-          <p><strong>Campaign:</strong> Tihar ki Thandak | Tagline: Jashn Bada, Thandak Zaroori.</p>
-          <ul><li>Procession break points</li><li>Festival welcome drink ritual</li><li>Community sharing bottles (1.25L/2L)</li><li>AIDA funnel-led communication</li></ul>
+        <article className="card pulse-card">
+          <h3>Phase 2 — Create a Ritual</h3>
+          <p><strong>Big Idea:</strong> Tihar ki Thandak | Jashn Bada, Thandak Zaroori.</p>
+          <ul><li>Turn procession pauses into branded cooling moments</li><li>Own the “welcome drink” slot at gatherings</li><li>Push sharing packs (1.25L/2L) as celebration fuel</li><li>Drive awareness to action with AIDA-led messaging</li></ul>
         </article>
-        <article className="card">
-          <h3>Slide 3: Portfolio + GTM + Activation</h3>
-          <p><strong>Frameworks:</strong> 4Ps + Rural distribution funnel.</p>
-          <ul><li>Product portfolio by segment (200ml, 600ml, 1.25L+)</li><li>Price entry at ₹10–₹15</li><li>3,000 outlet expansion via haats + stalls</li><li>Thandak zones and tribal cultural activations</li></ul>
+        <article className="card pulse-card">
+          <h3>Phase 3 — Flood the Ground</h3>
+          <p><strong>Execution Engine:</strong> 4Ps + Rural GTM funnel.</p>
+          <ul><li>Sharp pack architecture: 200ml, 600ml, and family packs</li><li>Low-entry pricing at ₹10–₹15 to trigger trial</li><li>Expand to 3,000 outlets across haats and festival stalls</li><li>Launch Thandak Zones with tribal-culture activations</li></ul>
         </article>
-        <article className="card">
-          <h3>Slide 4: Digital + Financials + Risks</h3>
-          <p><strong>Frameworks:</strong> 360° marketing + KPI + risk matrix.</p>
-          <ul><li>#ThandakKaTihar UGC and creator strategy</li><li>KPI goals: sales + distribution + brand recall</li><li>Budget: ₹4 Cr, ROI tracking</li><li>Scalability model: Festival → Ritual → Beverage Occasion</li></ul>
+        <article className="card pulse-card">
+          <h3>Phase 4 — Go Viral, Then Scale</h3>
+          <p><strong>Command Layer:</strong> 360° media + KPI tracking + risk radar.</p>
+          <ul><li>Explode #ThandakKaTihar through UGC and creator squads</li><li>Track hard outcomes: volume, distribution, and recall</li><li>Run with ₹4 Cr and live ROI governance</li><li>Replicate formula: Festival → Ritual → Everyday Occasion</li></ul>
         </article>
       </div>
     </>
